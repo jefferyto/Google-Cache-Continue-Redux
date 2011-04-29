@@ -32,6 +32,9 @@
 // @include        http://*/search?*q=cache:*
 // @include        http://*/search?*q=cache%3A*
 // @include        http://*/search?*q=cache%3a*
+// @include        https://*/search?*q=cache:*
+// @include        https://*/search?*q=cache%3A*
+// @include        https://*/search?*q=cache%3a*
 // ==/UserScript==
 
 // Redux changelog:
@@ -84,7 +87,7 @@
 		cacheLinkExplanation: 'Use %s links to continue using the Google cache.',
 
 		// explanation text for redirected page links
-		redirectLinkExplanation: 'All HTTP links will be redirected to the Google cache.',
+		redirectLinkExplanation: 'All HTTP/HTTPS links will be redirected to the Google cache.',
 
 		// "show options" link text
 		showOptions: 'show options',
@@ -413,11 +416,11 @@
 
 	// add cache links for each link
 	for (i = verPos + 1; (link = links.snapshotItem(i)); i++) {
-		if (link.protocol != 'http:') {
+		if (!/^https?:$/.test(link.protocol)) {
 			continue;
 		}
 
-		href = link.href.replace(/^http:\/\//, '');
+		href = link.href;
 		s = link.hash;
 		if (s) {
 			href = href.replace(s, '');
