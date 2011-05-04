@@ -206,9 +206,9 @@
 		return el;
 	};
 
-	$.trim = function ( string ) { return ( '' + string ).replace( /^\s\s*/, '' ).replace( /\s\s*$/, '' ); };
+	$.trim = function( string ) { return ( '' + string ).replace( /^\s\s*/, '' ).replace( /\s\s*$/, '' ); };
 
-	$.each = function ( object, fn ) {
+	$.each = function( object, fn ) {
 		var length, i;
 
 		if ( object instanceof Array ) {
@@ -228,15 +228,15 @@
 		}
 	};
 
-	$.makeArray = function ( object ) { return Array.prototype.slice.call( object, 0 ); };
+	$.makeArray = function( object ) { return Array.prototype.slice.call( object, 0 ); };
 
-	$.extend = function ( target ) {
+	$.extend = function( target ) {
 		var args = $.makeArray( arguments );
 
 		target = target || {};
 		args.shift();
 
-		$.each( args, function ( i, source ) {
+		$.each( args, function( i, source ) {
 			var prop;
 
 			source = source || {};
@@ -278,32 +278,30 @@
 
 
 
-	// find query URL parameter
-	a = document.location.search.substring(1).split('&');
-	l = a.length;
-	for (i = 0; i < l; i++) {
-		s = a[i];
-		if (s.indexOf('q=') == 0) {
-			q = s.substring(2);
-			break;
-		}
-	}
-	if (!q) {
-		return;
-	}
+	/*
+	 * find things that we need from the page query string
+	 */
 
-	// find cache term and URL
-	a = q.split('+');
-	l = a.length;
-	for (i = 0; i < l; i++) {
-		s = decodeURIComponent(a[i]);
-		if (s.indexOf('cache:') == 0) {
-			cacheTerm = a[i]; // we want the encoded version
-			url = s.substring(6);
-			break;
+	// query URL parameter
+	$.each( document.location.search.replace( /^\?/, '' ).split( '&' ), function( i, pair ) {
+		if ( pair.indexOf( 'q=' ) === 0 ) {
+			q = pair.substring( 2 );
+			return false;
 		}
-	}
-	if (!cacheTerm) {
+	} );
+
+	// cache term and URL
+	$.each( ( q || '' ).split( '+' ), function( i, encoded ) {
+		var decoded = decodeURIComponent( encoded );
+		if ( decoded.indexOf( 'cache:' ) === 0 ) {
+			cacheTerm = encoded; // we want the encoded version
+			url = decoded.substring( 6 );
+			return false;
+		}
+	} );
+
+	// can't continue without this information
+	if (!q || !cacheTerm) {
 		return;
 	}
 
