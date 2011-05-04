@@ -56,9 +56,10 @@
 // v0.1 (2008-07-31)
 // - Initial version
 
-(function() {
+(function ( document, head, undefined ) {
+
 	// default options
-	var defs = {
+	var defaultOptions = {
 		// whether page links should be redirected
 		// can be changed in the options panel
 		redirectPageLinks: false,
@@ -73,11 +74,11 @@
 
 		// text colour for cache links
 		cacheLinkTextColor: 'red'
-	};
+	},
 
 	// other strings
 	// these can only be changed by editing this script
-	var strs = {
+	strings = {
 		// explanation text for uncached link, for when Google does not have a cached version of the page
 		// %s will be replaced by a link to the original (uncached) page
 		uncached: '<b>Uncached:</b> %s',
@@ -115,10 +116,10 @@
 
 		// instruction text for text options
 		textOptionInstructions: 'Leave a field blank to reset to default'
-	};
+	},
 
 	// modify these to change the appearance of the cache links
-	var css = '\
+	css = '\
 		a.googleCache {\
 			position: static !important;\
 			display: inline !important;\
@@ -177,13 +178,15 @@
 		}\
 	';
 
+
+
 	// poor-man's jQuery
 	var $ = function (s, context) {
 		var div, el;
 		if (s.indexOf('<') == -1) {
-			return (context || doc).getElementsByTagName(s);
+			return (context || document).getElementsByTagName(s);
 		}
-		div = doc.createElement('div');
+		div = document.createElement('div');
 		div.innerHTML = $.trim(s);
 		el = div.firstChild;
 		div.removeChild(el);
@@ -191,9 +194,9 @@
 	}
 	$.trim = function (s) { return s.replace(/^\s\s*/, '').replace(/\s\s*$/, ''); };
 
-	var doc = document,
-		head = $('head')[0],
-		q,                  // (encoded) search query parameter (contains cache term)
+
+
+	var q,                  // (encoded) search query parameter (contains cache term)
 		cacheTerm,          // (encoded) cache term ("cache%3Ahttp%3A%2F%2Fwww.example.com")
 		url,                // URL of original page
 		opts = {},          // final script options
@@ -217,7 +220,7 @@
 
 
 	// find query URL parameter
-	a = doc.location.search.substring(1).split('&');
+	a = document.location.search.substring(1).split('&');
 	l = a.length;
 	for (i = 0; i < l; i++) {
 		s = a[i];
@@ -266,14 +269,14 @@
 
 	// load saved options
 	if (canSaveOpts) {
-		for (i in defs) {
+		for (i in defaultOptions) {
 			sopts[i] = GM_getValue(i);
 		}
 	}
 
 	// combine default and saved to get final options
-	for (i in defs) {
-		opts[i] = defs[i];
+	for (i in defaultOptions) {
+		opts[i] = defaultOptions[i];
 		s = sopts[i];
 		if (s) {
 			opts[i] = s;
@@ -284,7 +287,7 @@
 	saveOptions();
 
 	// replace %s here using the current cacheLinkText
-	strs.cacheLinkExplanation = strs.cacheLinkExplanation.replace(/%s/g, '<a href="" class="googleCache">' + opts.cacheLinkText + '</a>');
+	strings.cacheLinkExplanation = strings.cacheLinkExplanation.replace(/%s/g, '<a href="" class="googleCache">' + opts.cacheLinkText + '</a>');
 
 
 
@@ -295,12 +298,12 @@
 
 	// if Google hasn't cached the original page, add a link for the original URL
 	// safer to add after the list of suggestions
-	s = doc.title;
+	s = document.title;
 	i = s.lastIndexOf(' - ');
 	if (i > -1 && s.substring(0, i) == decodeURIComponent(q.replace(/\+/g, ' ')) && s.substring(i + 3).indexOf('Google') > -1) {
 		el = $('ul')[0];
 		if (el) {
-			s = strs.uncached.replace(/%s/g, '<a href="' + ((url.indexOf('://') == -1) ? 'http://' : '') + url + '">' + url + '</a>');
+			s = strings.uncached.replace(/%s/g, '<a href="' + ((url.indexOf('://') == -1) ? 'http://' : '') + url + '">' + url + '</a>');
 			el.parentNode.insertBefore($('<p id="googleCacheExplanation">' + s + '</p>'), el.nextSibling);
 		}
 		return;
@@ -309,8 +312,8 @@
 
 
 	// get a snapshot from the live DOM
-	links = doc.evaluate('//a[@href]',
-	                     doc,
+	links = document.evaluate('//a[@href]',
+	                     document,
 	                     null,
 	                     XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
 	                     null);
@@ -336,7 +339,7 @@
 		<div id="googleCacheExplanation">\
 			<span></span>&nbsp;&nbsp;<a href="#"></a>\
 			<div>\
-				<input type="checkbox" id="googleCacheRedirectPageLinks" /><label for="googleCacheRedirectPageLinks">' + strs.redirectPageLinksLabel + '</label>\
+				<input type="checkbox" id="googleCacheRedirectPageLinks" /><label for="googleCacheRedirectPageLinks">' + strings.redirectPageLinksLabel + '</label>\
 			</div>\
 		</div>\
 	');
@@ -355,20 +358,20 @@
 		el = $('\
 			<table cellpadding="0" cellspacing="0" border="0">\
 				<tr>\
-					<th colspan="3">' + strs.cacheLinkOptions + '</th>\
+					<th colspan="3">' + strings.cacheLinkOptions + '</th>\
 				</tr>\
 				<tr>\
-					<td><label for="googleCacheCacheLinkText">' + strs.cacheLinkTextLabel + '</label></td>\
+					<td><label for="googleCacheCacheLinkText">' + strings.cacheLinkTextLabel + '</label></td>\
 					<td><input type="text" id="googleCacheCacheLinkText" value="' + opts.cacheLinkText + '" /></td>\
-					<td>' + strs.reload + '</td>\
+					<td>' + strings.reload + '</td>\
 				</tr>\
 				<tr>\
-					<td><label for="googleCacheCacheLinkBackgroundColor">' + strs.cacheLinkBackgroundColorLabel + '</label></td>\
+					<td><label for="googleCacheCacheLinkBackgroundColor">' + strings.cacheLinkBackgroundColorLabel + '</label></td>\
 					<td><input type="text" id="googleCacheCacheLinkBackgroundColor" value="' + opts.cacheLinkBackgroundColor + '" /></td>\
 					<td></td>\
 				</tr>\
 				<tr>\
-					<td><label for="googleCacheCacheLinkTextColor">' + strs.cacheLinkTextColorLabel + '</label></td>\
+					<td><label for="googleCacheCacheLinkTextColor">' + strings.cacheLinkTextColorLabel + '</label></td>\
 					<td><input type="text" id="googleCacheCacheLinkTextColor" value="' + opts.cacheLinkTextColor + '" /></td>\
 					<td></td>\
 				</tr>\
@@ -378,7 +381,7 @@
 		i[0].addEventListener('change', function () {
 			this.value = $.trim(this.value);
 			if (!this.value) {
-				this.value = defs.cacheLinkText;
+				this.value = defaultOptions.cacheLinkText;
 			}
 			opts.cacheLinkText = this.value;
 			saveOptions();
@@ -386,7 +389,7 @@
 		i[1].addEventListener('change', function () {
 			this.value = $.trim(this.value);
 			if (!this.value) {
-				this.value = defs.cacheLinkBackgroundColor;
+				this.value = defaultOptions.cacheLinkBackgroundColor;
 			}
 			opts.cacheLinkBackgroundColor = this.value;
 			setCacheLinkColors();
@@ -395,21 +398,21 @@
 		i[2].addEventListener('change', function () {
 			this.value = $.trim(this.value);
 			if (!this.value) {
-				this.value = defs.cacheLinkTextColor;
+				this.value = defaultOptions.cacheLinkTextColor;
 			}
 			opts.cacheLinkTextColor = this.value;
 			setCacheLinkColors();
 			saveOptions();
 		}, false);
 		optsPanel.appendChild(el);
-		optsPanel.appendChild(doc.createTextNode(strs.textOptionInstructions));
+		optsPanel.appendChild(document.createTextNode(strings.textOptionInstructions));
 	}
 
 
 
 	// build cache link template href
-	tmplHref = doc.location.href;
-	s = doc.location.hash;
+	tmplHref = document.location.href;
+	s = document.location.hash;
 	if (s) {
 		tmplHref = tmplHref.replace(s, '');
 	}
@@ -433,7 +436,7 @@
 
 
 	// add event handler to change clicked link's href to cache version
-	doc.addEventListener('click', function (e) {
+	document.addEventListener('click', function (e) {
 		var link = e.target, cacheLink;
 		if (link.nodeType == 3) {
 			link = link.parentNode;
@@ -482,10 +485,10 @@
 			e.preventDefault();
 		}
 		if (optsPanel.style.display == 'none') {
-			this.innerHTML = strs.hideOptions;
+			this.innerHTML = strings.hideOptions;
 			optsPanel.style.display = 'block';
 		} else {
-			this.innerHTML = strs.showOptions;
+			this.innerHTML = strings.showOptions;
 			optsPanel.style.display = 'none';
 		}
 	}
@@ -494,8 +497,9 @@
 		var redirect = this.checked;
 		opts.redirectPageLinks = redirect;
 		hideCacheLinks.disabled = hideCacheLinks.sheet.disabled = !redirect;
-		msg.innerHTML = (redirect) ? strs.redirectLinkExplanation : strs.cacheLinkExplanation;
+		msg.innerHTML = (redirect) ? strings.redirectLinkExplanation : strings.cacheLinkExplanation;
 		saveOptions();
 	}
-})();
+
+})( document, document.getElementsByTagName('head')[0] );
 
