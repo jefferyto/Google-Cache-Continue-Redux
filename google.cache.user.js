@@ -56,7 +56,11 @@
 // v0.1 (2008-07-31)
 // - Initial version
 
-(function ( document, head, undefined ) {
+(function( document, head, undefined ) {
+
+	/*
+	 * start user editable parts
+	 */
 
 	// default options
 	var defaultOptions = {
@@ -178,23 +182,78 @@
 		}\
 	';
 
+	/*
+	 * end user editable parts
+	 */
 
 
-	// poor-man's jQuery
-	var $ = function (s, context) {
+
+	/*
+	 * poor-man's jQuery
+	 */
+
+	var $ = function( string, context ) {
 		var div, el;
-		if (s.indexOf('<') == -1) {
-			return (context || document).getElementsByTagName(s);
+
+		if ( string.indexOf( '<' ) == -1 ) {
+			return ( context || document ).getElementsByTagName( string );
 		}
-		div = document.createElement('div');
-		div.innerHTML = $.trim(s);
+
+		div = document.createElement( 'div' );
+		div.innerHTML = $.trim( string );
 		el = div.firstChild;
-		div.removeChild(el);
+		div.removeChild( el );
 		return el;
-	}
-	$.trim = function (s) { return s.replace(/^\s\s*/, '').replace(/\s\s*$/, ''); };
+	};
+
+	$.trim = function ( string ) { return ( '' + string ).replace( /^\s\s*/, '' ).replace( /\s\s*$/, '' ); };
+
+	$.each = function ( object, fn ) {
+		var length, i;
+
+		if ( object instanceof Array ) {
+			length = object.length;
+			for ( i = 0; i < length; i++ ) {
+				if ( fn.call( object[ i ], i, object[ i ] ) === false ) {
+					break;
+				}
+			}
+
+		} else if ( typeof object === 'object' && object ) {
+			for ( i in object ) {
+				if ( fn.call( object[ i ], i, object[ i ] ) === false ) {
+					break;
+				}
+			}
+		}
+	};
+
+	$.makeArray = function ( object ) { return Array.prototype.slice.call( object, 0 ); };
+
+	$.extend = function ( target ) {
+		var args = $.makeArray( arguments );
+
+		target = target || {};
+		args.shift();
+
+		$.each( args, function ( i, source ) {
+			var prop;
+
+			source = source || {};
+
+			for ( prop in source ) {
+				target[ prop ] = source[ prop ];
+			}
+		} );
+
+		return target;
+	};
 
 
+
+	/*
+	 * more variables!
+	 */
 
 	var q,                  // (encoded) search query parameter (contains cache term)
 		cacheTerm,          // (encoded) cache term ("cache%3Ahttp%3A%2F%2Fwww.example.com")
