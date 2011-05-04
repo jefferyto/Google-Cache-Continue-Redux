@@ -261,11 +261,11 @@
 				name = 'testOption' + value,
 				testValue;
 
-			if (typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined') {
+			if ( typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined' ) {
 				try {
-					GM_setValue(name, value);
-					testValue = GM_getValue(name);
-					GM_setValue(name, '');
+					GM_setValue( name, value );
+					testValue = GM_getValue( name );
+					GM_setValue( name, '' );
 				} catch (e) {
 					testValue = null;
 				}
