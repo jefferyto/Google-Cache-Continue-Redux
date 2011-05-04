@@ -252,15 +252,41 @@
 
 
 	/*
+	 * functions!
+	 */
+
+		// returns true if the browser supports GM_getValue / GM_setValue
+	var canSaveOptions = function() {
+			var value = ( new Date() ).getTime() + '-' + Math.random(),
+				name = 'testOption' + value,
+				testValue;
+
+			if (typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined') {
+				try {
+					GM_setValue(name, value);
+					testValue = GM_getValue(name);
+					GM_setValue(name, '');
+				} catch (e) {
+					testValue = null;
+				}
+			}
+
+			value = testValue === value;
+			canSaveOptions = function() { return value; }; // no need to keep testing
+			return value;
+		},
+
+
+
+	/*
 	 * more variables!
 	 */
 
-	var q,                  // (encoded) search query parameter (contains cache term)
+		q,                  // (encoded) search query parameter (contains cache term)
 		cacheTerm,          // (encoded) cache term ("cache%3Ahttp%3A%2F%2Fwww.example.com")
 		url,                // URL of original page
 		opts = {},          // final script options
 		sopts = {},         // saved script options
-		canSaveOpts = true, // whether GM_setValue() can be used
 		verPos,             // index of text-only / full version link
 		msg,                // message element
 		optsPanel,          // options panel
@@ -307,25 +333,8 @@
 
 
 
-	// test if we can save options
-	if (typeof GM_getValue == 'undefined' || typeof GM_setValue == 'undefined') {
-		canSaveOpts = false;
-	} else {
-		try {
-			i = (new Date()).getTime() + '-' + Math.random();
-			GM_setValue('testOption', i);
-			s = GM_getValue('testOption');
-			GM_setValue('testOption', '');
-		} catch (e) {
-			canSaveOpts = false;
-		}
-		if (s != i) {
-			canSaveOpts = false;
-		}
-	}
-
 	// load saved options
-	if (canSaveOpts) {
+	if (canSaveOptions()) {
 		for (i in defaultOptions) {
 			sopts[i] = GM_getValue(i);
 		}
@@ -411,7 +420,7 @@
 	toggleOptionsPanel.call(a);
 	toggleCacheLinks.call(i);
 
-	if (canSaveOpts) {
+	if (canSaveOptions()) {
 		el = $('\
 			<table cellpadding="0" cellspacing="0" border="0">\
 				<tr>\
@@ -527,7 +536,7 @@
 	}
 
 	function saveOptions() {
-		if (canSaveOpts) {
+		if (canSaveOptions()) {
 			for (i in opts) {
 				GM_setValue(i, opts[i]);
 			}
