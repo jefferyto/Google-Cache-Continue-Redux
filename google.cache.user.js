@@ -327,6 +327,20 @@
 			}
 		},
 
+		// returns true if the current page is a google cache page
+		isCachePage = function() {
+			var str = document.title,
+				prefix = decodeURIComponent( query.replace( /\+/g, ' ' ) ) + ' - ',
+				result = true;
+
+			if ( str.indexOf( prefix ) === 0 ) {
+				str = str.replace( prefix, '' );
+				result = str.indexOf( 'Google' ) === -1 || str.indexOf( ' - ' ) > -1;
+			}
+
+			return result;
+		},
+
 
 
 	/*
@@ -384,9 +398,7 @@
 
 	// if Google hasn't cached the original page, add a link for the original URL
 	// safer to add after the list of suggestions
-	s = document.title;
-	i = s.lastIndexOf(' - ');
-	if (i > -1 && s.substring(0, i) == decodeURIComponent(query.replace(/\+/g, ' ')) && s.substring(i + 3).indexOf('Google') > -1) {
+	if (!isCachePage()) {
 		el = $('ul')[0];
 		if (el) {
 			s = strings.uncached.replace(/%s/g, '<a href="' + ((url.indexOf('://') == -1) ? 'http://' : '') + url + '">' + url + '</a>');
