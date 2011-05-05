@@ -197,15 +197,23 @@
 	var $ = function( string, context ) {
 		var div, el;
 
-		if ( string.indexOf( '<' ) == -1 ) {
-			return ( context || document ).getElementsByTagName( string );
+		if ( string.indexOf( '<' ) > -1 ) {
+			div = document.createElement( 'div' );
+			div.innerHTML = $.trim( string );
+			el = div.firstChild;
+			div.removeChild( el );
+			return el;
 		}
 
-		div = document.createElement( 'div' );
-		div.innerHTML = $.trim( string );
-		el = div.firstChild;
-		div.removeChild( el );
-		return el;
+		if ( string.indexOf( '#' ) === 0 ) {
+			el = document.getElementById( string.substring(1) );
+			if ( el && context && !( context.compareDocumentPosition( el ) & 16 ) ) {
+				el = undefined;
+			}
+			return el;
+		}
+
+		return ( context || document ).getElementsByTagName( string );
 	};
 
 	$.trim = function( string ) { return ( '' + string ).replace( /^\s\s*/, '' ).replace( /\s\s*$/, '' ); };
@@ -259,26 +267,17 @@
 	 * globals!
 	 */
 
-		// (encoded) search query parameter (contains cache term)
-	var query = findQueryParameter(),
+		// (encoded) search query (contains cache term)
+	var searchQuery = findSearchQuery(),
 
 		// (encoded) cache term ("cache%3Ahttp%3A%2F%2Fwww.example.com")
-		cacheTerm = findCacheTerm( query ),
-
-		// URL of original page
-		url = decodeURIComponent( cacheTerm || '' ).replace( /^cache:/, '' ),
+		cacheTerm = findCacheTerm( searchQuery ),
 
 		// script options
 		options = restoreOptions(),
 
 		// link details
 		links,
-
-		// style element to hide cache links
-		hideCacheLinksStyle = $('<style type="text/css">a.googleCache' + ID + ' { display: none !important; }</style>'),
-
-		// style element for cache links
-		cacheLinkColorsStyle,
 
 		msg,                // message element
 		optsPanel,          // options panel
@@ -289,7 +288,7 @@
 
 
 	// we can't continue without this information
-	if ( !query || !cacheTerm ) {
+	if ( !searchQuery || !cacheTerm ) {
 		return;
 	}
 
@@ -309,12 +308,8 @@
 
 
 	// if Google hasn't cached the original page, add a link for the original URL
-	// safer to add after the list of suggestions
-	if (!isCachePage()) {
-		el = $('ul')[0];
-		if (el) {
-			$.insertAfter($('<p id="googleCacheExplanation' + ID + '">' + strings.uncached.replace(/%s/g, '<a href="' + ((url.indexOf('://') == -1) ? 'http://' : '') + url + '">' + url + '</a>') + '</p>'), el);
-		}
+	if (!isCachePage(searchQuery)) {
+		addOriginalLink( decodeURIComponent( cacheTerm ).replace( /^cache:/, '' ) );
 		return;
 	}
 
@@ -327,7 +322,13 @@
 	}
 
 	// add css specific to the cache page
-	head.appendChild(hideCacheLinksStyle);
+	head.appendChild( $( '\
+		<style id="googleCacheHideCacheLinks' + ID + '" type="text/css">\
+			a.googleCache' + ID + ' {\
+				display: none !important;\
+			}\
+		</style>\
+	' ) );
 	setCacheLinkColors();
 
 	// add our explanation text / option panel to the cache page header
@@ -406,36 +407,9 @@
 
 
 
-
-
-
-	// returns the query parameter ("q=...") from the page URL
-	function findQueryParameter() {
-		var query = '';
-
-		$.each( document.location.search.replace( /^\?/, '' ).split( '&' ), function( i, pair ) {
-			if ( pair.indexOf( 'q=' ) === 0 ) {
-				query = pair.substring( 2 );
-				return false;
-			}
-		} );
-
-		return query;
-	}
-
-	// returns the (encoded) cache term ("cache:...") from the given query parameter
-	function findCacheTerm( query ) {
-		var cacheTerm = '';
-
-		$.each( ( query || '' ).split( '+' ), function( i, encoded ) {
-			if ( decodeURIComponent( encoded ).indexOf( 'cache:' ) === 0 ) {
-				cacheTerm = encoded;
-				return false;
-			}
-		} );
-
-		return cacheTerm;
-	}
+	/*
+	 * save / restore options
+	 */
 
 	// returns true if the browser supports GM_getValue / GM_setValue
 	function canSaveOptions() {
@@ -481,8 +455,42 @@
 		}
 	}
 
+
+
+	/*
+	 * find information from the current page
+	 */
+
+	// returns the search query from the page URL
+	function findSearchQuery() {
+		var query = '';
+
+		$.each( document.location.search.replace( /^\?/, '' ).split( '&' ), function( i, pair ) {
+			if ( pair.indexOf( 'q=' ) === 0 ) {
+				query = pair.substring( 2 );
+				return false;
+			}
+		} );
+
+		return query;
+	}
+
+	// returns the (encoded) cache term ("cache:...") from the given query parameter
+	function findCacheTerm( query ) {
+		var cacheTerm = '';
+
+		$.each( ( query || '' ).split( '+' ), function( i, encoded ) {
+			if ( decodeURIComponent( encoded ).indexOf( 'cache:' ) === 0 ) {
+				cacheTerm = encoded;
+				return false;
+			}
+		} );
+
+		return cacheTerm;
+	}
+
 	// returns true if the current page is a google cache page
-	function isCachePage() {
+	function isCachePage( query ) {
 		var str = document.title,
 			prefix = decodeURIComponent( query.replace( /\+/g, ' ' ) ) + ' - ',
 			result = true;
@@ -495,7 +503,7 @@
 		return result;
 	}
 
-	// finds text-only / full version link, and gathers link details
+	// finds text-only / full version link, gathers link details, inserts cache links
 	function scanLinks( cacheTerm ) {
 		// get a snapshot from the live DOM
 		var links = document.evaluate( '//a[@href]',
@@ -515,7 +523,7 @@
 				}
 
 			} else {
-				// gather link details
+				// gather link details, insert cache link
 				if ( /^https?:$/.test( link.protocol ) ) {
 					href = link.href;
 					hash = link.hash;
@@ -538,35 +546,73 @@
 		return list;
 	}
 
+
+
+	/*
+	 * manipulate styles
+	 */
+
+	// make cache links visible or hidden
+	function setCacheLinkVisibility( isVisible ) {
+		var style = $( '#googleCacheHideCacheLinks' + ID );
+		style.disabled = style.sheet.disabled = isVisible;
+	}
+
+	// set colours for cache links
+	function setCacheLinkColors() {
+		var prevStyle = $( '#googleCacheCacheLinkColors' + ID ),
+			curStyle = $( '\
+				<style id="googleCacheCacheLinkColors' + ID + '" type="text/css">\
+					a.googleCache' + ID + ' {\
+						background: ' + options.cacheLinkBackgroundColor + ' !important;\
+						color: ' + options.cacheLinkTextColor + ' !important;\
+					}\
+					a.googleCache' + ID + ':hover {\
+						background: ' + options.cacheLinkTextColor + ' !important;\
+						color: ' + options.cacheLinkBackgroundColor + ' !important;\
+					}\
+				</style>\
+			' );
+
+		if ( prevStyle ) {
+			head.replaceChild( curStyle, prevStyle );
+		} else {
+			head.appendChild( curStyle );
+		}
+	}
+
+
+
+	/*
+	 * manipulate html
+	 */
+
 	// updates hrefs for links
 	function updateLinkHrefs( list, isOriginalHref ) {
 		var prop = isOriginalHref ? 'href' : 'cacheHref';
 		$.each( list, function() { this.link.href = this[ prop ]; } );
 	}
 
-	// make cache links visible or hidden
-	function setCacheLinkVisibility( isVisible ) { hideCacheLinksStyle.disabled = hideCacheLinksStyle.sheet.disabled = isVisible; }
+	// adds a link for the original URL to the Google search results page
+	// safer to add after the list of suggestions
+	function addOriginalLink( url ) {
+		var ul = $( 'ul' )[ 0 ],
+			msg = strings.uncached.replace( /%s/g, '<a href="' + ( url.indexOf( '://' ) === -1 ? 'http://' : '' ) + url + '">' + url + '</a>' );
 
-
-
-	function setCacheLinkColors() {
-		if (cacheLinkColorsStyle) {
-			head.removeChild(cacheLinkColorsStyle);
+		if ( ul ) {
+			$.insertAfter( $( '<p id="googleCacheExplanation' + ID + '">' + msg + '</p>' ), ul );
 		}
-		cacheLinkColorsStyle = $('\
-			<style type="text/css">\
-				a.googleCache' + ID + ' {\
-					background: ' + options.cacheLinkBackgroundColor + ' !important;\
-					color: ' + options.cacheLinkTextColor + ' !important;\
-				}\
-				a.googleCache' + ID + ':hover {\
-					background: ' + options.cacheLinkTextColor + ' !important;\
-					color: ' + options.cacheLinkBackgroundColor + ' !important;\
-				}\
-			</style>\
-		');
-		head.appendChild(cacheLinkColorsStyle);
 	}
+
+
+
+
+
+
+
+
+
+
 
 	// event handlers
 
