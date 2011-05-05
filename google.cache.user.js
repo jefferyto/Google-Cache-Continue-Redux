@@ -249,6 +249,8 @@
 		return target;
 	};
 
+	$.insertAfter = function( newChild, refChild ) { refChild.parentNode.insertBefore( newChild, refChild.nextSibling ); };
+
 
 
 	/*
@@ -341,6 +343,61 @@
 			return result;
 		},
 
+		// finds text-only / full version link, and gathers link details
+		scanLinks = function( cacheTerm ) {
+			// get a snapshot from the live DOM
+			var links = document.evaluate( '//a[@href]',
+			                               document,
+			                               null,
+			                               XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+			                               null ),
+				list = [],
+				tmplHref = document.location.href.replace(document.location.hash, ''),
+				changeVersion, link, href, hash, cacheHref, cacheLink, i;
+
+			for ( i = 0; ( link = links.snapshotItem( i ) ); i++ ) {
+				if ( !changeVersion ) {
+					// find last link in the cache page header (the "Text-only version" or "Full version" link)
+					if ( link.pathname === '/search' && /cache:.*&strip=[01]$/.test( link.search ) ) {
+						changeVersion = link;
+					}
+
+				} else {
+					// gather link details
+					if ( /^https?:$/.test( link.protocol ) ) {
+						href = link.href;
+						hash = link.hash;
+						cacheHref = tmplHref.replace( cacheTerm, encodeURIComponent( 'cache:' + href.replace( hash, '' ) ) ) + hash;
+						cacheLink = $( '<a href="' + cacheHref + '" class="googleCache">' + options.cacheLinkText + '</a>' );
+
+						list.push( {
+							link: link,
+							cacheLink: cacheLink,
+							href: href,
+							cacheHref: cacheHref
+						} );
+
+						$.insertAfter( cacheLink, link );
+					}
+				}
+			}
+
+			list.changeVersion = changeVersion;
+			return list;
+		},
+
+		// updates hrefs for links
+		updateLinkHrefs = function( list, isOriginalHref ) {
+			if ( isOriginalHref ) {
+				$.each( list, function() { this.link.href = this.href; } );
+			} else {
+				$.each( list, function() { this.link.href = this.cacheHref; } );
+			}
+		},
+
+		// make cache links visible or hidden
+		setCacheLinkVisibility = function( isVisible ) { hideCacheLinksStyle.disabled = hideCacheLinksStyle.sheet.disabled = isVisible; },
+
 
 
 	/*
@@ -359,15 +416,17 @@
 		// script options
 		options = restoreOptions(),
 
-		verPos,             // index of text-only / full version link
+		// link details
+		links,
+
+		// style element to hide cache links
+		hideCacheLinksStyle = $('<style type="text/css">a.googleCache { display: none !important; }</style>'),
+
+		// style element for cache links
+		cacheLinkColorsStyle,
+
 		msg,                // message element
 		optsPanel,          // options panel
-		hideCacheLinks,     // style element to hide cache links
-		cacheLinkColors,    // style element for cache links
-		links,              // nodelist of cached page links
-		link,               // link element
-		tmplHref,           // cache link template href string
-		href,               // href string
 		el,                 // temp element
 		a,                  // temp array / element
 		s,                  // temp string
@@ -408,28 +467,15 @@
 	}
 
 
+	links = scanLinks( cacheTerm );
 
-	// get a snapshot from the live DOM
-	links = document.evaluate('//a[@href]',
-	                     document,
-	                     null,
-	                     XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-	                     null);
-
-	// find last link in the cache page header (the "Text-only version" or "Full version" link)
-	for (i = 0; (link = links.snapshotItem(i)); i++) {
-		if (link.pathname == '/search' && link.search.indexOf('cache:') > -1 && /&strip=(?:0|1)$/.test(link.search)) {
-			verPos = i;
-			break;
-		}
-	}
-	if (!link) {
+	if ( !links.changeVersion ) {
+		// we didn't find the text-only / full version link
 		return;
 	}
 
 	// add css specific to the cache page
-	hideCacheLinks = $('<style type="text/css">a.googleCache { display: none !important; }</style>');
-	head.appendChild(hideCacheLinks);
+	head.appendChild(hideCacheLinksStyle);
 	setCacheLinkColors();
 
 	// add our explanation text / option panel to the cache page header
@@ -448,7 +494,7 @@
 	i = $('input', el)[0];
 	i.checked = options.redirectPageLinks;
 	i.addEventListener('click', toggleCacheLinks, false);
-	link.parentNode.parentNode.appendChild(el);
+	links.changeVersion.parentNode.parentNode.appendChild(el);
 	toggleOptionsPanel.call(a);
 	toggleCacheLinks.call(i);
 
@@ -508,51 +554,14 @@
 
 
 
-	// build cache link template href
-	tmplHref = document.location.href;
-	s = document.location.hash;
-	if (s) {
-		tmplHref = tmplHref.replace(s, '');
-	}
-
-	// add cache links for each link
-	for (i = verPos + 1; (link = links.snapshotItem(i)); i++) {
-		if (!/^https?:$/.test(link.protocol)) {
-			continue;
-		}
-
-		href = link.href;
-		s = link.hash;
-		if (s) {
-			href = href.replace(s, '');
-		}
-		href = tmplHref.replace(cacheTerm, encodeURIComponent('cache:' + href)) + s;
-
-		link.parentNode.insertBefore($('<a href="' + href + '" class="googleCache">' + options.cacheLinkText + '</a>'), link.nextSibling);
-	}
-
-
-
-	// add event handler to change clicked link's href to cache version
-	document.addEventListener('click', function (e) {
-		var link = e.target, cacheLink;
-		if (link.nodeType == 3) {
-			link = link.parentNode;
-		}
-		cacheLink = link.nextSibling;
-		if (!options.redirectPageLinks || link.nodeName.toUpperCase() != 'A' || !cacheLink || cacheLink.nodeName.toUpperCase() != 'A' || cacheLink.className != 'googleCache') {
-			return;
-		}
-		link.href = cacheLink.href;
-	}, false);
 
 
 
 	function setCacheLinkColors() {
-		if (cacheLinkColors) {
-			head.removeChild(cacheLinkColors);
+		if (cacheLinkColorsStyle) {
+			head.removeChild(cacheLinkColorsStyle);
 		}
-		cacheLinkColors = $('\
+		cacheLinkColorsStyle = $('\
 			<style type="text/css">\
 				a.googleCache {\
 					background: ' + options.cacheLinkBackgroundColor + ' !important;\
@@ -564,7 +573,7 @@
 				}\
 			</style>\
 		');
-		head.appendChild(cacheLinkColors);
+		head.appendChild(cacheLinkColorsStyle);
 	}
 
 	// event handlers
@@ -585,7 +594,8 @@
 	function toggleCacheLinks() {
 		var redirect = this.checked;
 		options.redirectPageLinks = redirect;
-		hideCacheLinks.disabled = hideCacheLinks.sheet.disabled = !redirect;
+		updateLinkHrefs(links, !redirect);
+		setCacheLinkVisibility(!redirect);
 		msg.innerHTML = (redirect) ? strings.redirectLinkExplanation : strings.cacheLinkExplanation;
 		saveOptions( options );
 	}
