@@ -256,156 +256,11 @@
 
 
 	/*
-	 * functions!
-	 */
-
-	// returns the query parameter ("q=...") from the page URL
-	var findQueryParameter = function() {
-			var query = '';
-
-			$.each( document.location.search.replace( /^\?/, '' ).split( '&' ), function( i, pair ) {
-				if ( pair.indexOf( 'q=' ) === 0 ) {
-					query = pair.substring( 2 );
-					return false;
-				}
-			} );
-
-			return query;
-		},
-
-		// returns the (encoded) cache term ("cache:...") from the given query parameter
-		findCacheTerm = function( query ) {
-			var cacheTerm = '';
-
-			$.each( ( query || '' ).split( '+' ), function( i, encoded ) {
-				if ( decodeURIComponent( encoded ).indexOf( 'cache:' ) === 0 ) {
-					cacheTerm = encoded;
-					return false;
-				}
-			} );
-
-			return cacheTerm;
-		},
-
-		// returns true if the browser supports GM_getValue / GM_setValue
-		canSaveOptions = function() {
-			var name = 'testOption' + ID, value;
-
-			if ( typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined' ) {
-				try {
-					GM_setValue( name, ID );
-					value = GM_getValue( name );
-					GM_setValue( name, '' );
-				} catch (e) {
-					value = null;
-				}
-			}
-
-			value = value === ID;
-			canSaveOptions = function() { return value; }; // no need to keep testing
-			return value;
-		},
-
-		// returns an options object based on any saved options and the default options
-		restoreOptions = function() {
-			var options = $.extend( {}, defaultOptions );
-
-			if ( canSaveOptions() ) {
-				$.each( defaultOptions, function( name ) {
-					var saved = GM_getValue( name );
-					if ( saved !== undefined ) {
-						options[ name ] = saved;
-					}
-				} );
-			}
-
-			return options;
-		},
-
-		// saves the given options object
-		saveOptions = function( options ) {
-			if ( canSaveOptions() ) {
-				$.each( defaultOptions, function ( name ) { GM_setValue( name, options[ name ] ); } );
-			}
-		},
-
-		// returns true if the current page is a google cache page
-		isCachePage = function() {
-			var str = document.title,
-				prefix = decodeURIComponent( query.replace( /\+/g, ' ' ) ) + ' - ',
-				result = true;
-
-			if ( str.indexOf( prefix ) === 0 ) {
-				str = str.replace( prefix, '' );
-				result = str.indexOf( 'Google' ) === -1 || str.indexOf( ' - ' ) > -1;
-			}
-
-			return result;
-		},
-
-		// finds text-only / full version link, and gathers link details
-		scanLinks = function( cacheTerm ) {
-			// get a snapshot from the live DOM
-			var links = document.evaluate( '//a[@href]',
-			                               document,
-			                               null,
-			                               XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-			                               null ),
-				list = [],
-				tmplHref = document.location.href.replace(document.location.hash, ''),
-				changeVersion, link, href, hash, cacheHref, cacheLink, i;
-
-			for ( i = 0; ( link = links.snapshotItem( i ) ); i++ ) {
-				if ( !changeVersion ) {
-					// find last link in the cache page header (the "Text-only version" or "Full version" link)
-					if ( link.pathname === '/search' && /cache:.*&strip=[01]$/.test( link.search ) ) {
-						changeVersion = link;
-					}
-
-				} else {
-					// gather link details
-					if ( /^https?:$/.test( link.protocol ) ) {
-						href = link.href;
-						hash = link.hash;
-						cacheHref = tmplHref.replace( cacheTerm, encodeURIComponent( 'cache:' + href.replace( hash, '' ) ) ) + hash;
-						cacheLink = $( '<a href="' + cacheHref + '" class="googleCache' + ID + '">' + options.cacheLinkText + '</a>' );
-
-						list.push( {
-							link: link,
-							cacheLink: cacheLink,
-							href: href,
-							cacheHref: cacheHref
-						} );
-
-						$.insertAfter( cacheLink, link );
-					}
-				}
-			}
-
-			list.changeVersion = changeVersion;
-			return list;
-		},
-
-		// updates hrefs for links
-		updateLinkHrefs = function( list, isOriginalHref ) {
-			if ( isOriginalHref ) {
-				$.each( list, function() { this.link.href = this.href; } );
-			} else {
-				$.each( list, function() { this.link.href = this.cacheHref; } );
-			}
-		},
-
-		// make cache links visible or hidden
-		setCacheLinkVisibility = function( isVisible ) { hideCacheLinksStyle.disabled = hideCacheLinksStyle.sheet.disabled = isVisible; },
-
-
-
-	/*
-	 * more variables!
+	 * globals!
 	 */
 
 		// (encoded) search query parameter (contains cache term)
-		query = findQueryParameter(),
+	var query = findQueryParameter(),
 
 		// (encoded) cache term ("cache%3Ahttp%3A%2F%2Fwww.example.com")
 		cacheTerm = findCacheTerm( query ),
@@ -429,9 +284,7 @@
 		optsPanel,          // options panel
 		el,                 // temp element
 		a,                  // temp array / element
-		s,                  // temp string
-		i,                  // loop counter / temp variable
-		l;                  // list length
+		i;                  // loop counter / temp variable
 
 
 
@@ -460,8 +313,7 @@
 	if (!isCachePage()) {
 		el = $('ul')[0];
 		if (el) {
-			s = strings.uncached.replace(/%s/g, '<a href="' + ((url.indexOf('://') == -1) ? 'http://' : '') + url + '">' + url + '</a>');
-			el.parentNode.insertBefore($('<p id="googleCacheExplanation' + ID + '">' + s + '</p>'), el.nextSibling);
+			$.insertAfter($('<p id="googleCacheExplanation' + ID + '">' + strings.uncached.replace(/%s/g, '<a href="' + ((url.indexOf('://') == -1) ? 'http://' : '') + url + '">' + url + '</a>') + '</p>'), el);
 		}
 		return;
 	}
@@ -554,6 +406,146 @@
 
 
 
+
+
+
+	// returns the query parameter ("q=...") from the page URL
+	function findQueryParameter() {
+		var query = '';
+
+		$.each( document.location.search.replace( /^\?/, '' ).split( '&' ), function( i, pair ) {
+			if ( pair.indexOf( 'q=' ) === 0 ) {
+				query = pair.substring( 2 );
+				return false;
+			}
+		} );
+
+		return query;
+	}
+
+	// returns the (encoded) cache term ("cache:...") from the given query parameter
+	function findCacheTerm( query ) {
+		var cacheTerm = '';
+
+		$.each( ( query || '' ).split( '+' ), function( i, encoded ) {
+			if ( decodeURIComponent( encoded ).indexOf( 'cache:' ) === 0 ) {
+				cacheTerm = encoded;
+				return false;
+			}
+		} );
+
+		return cacheTerm;
+	}
+
+	// returns true if the browser supports GM_getValue / GM_setValue
+	function canSaveOptions() {
+		var me = arguments.callee, name = 'testOption' + ID, value;
+
+		if ( me.cached === undefined ) {
+			if ( typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined' ) {
+				try {
+					GM_setValue( name, ID );
+					value = GM_getValue( name );
+					GM_setValue( name, '' );
+				} catch (e) {
+					value = null;
+				}
+			}
+
+			me.cached = value === ID;
+		}
+
+		return me.cached;
+	}
+
+	// returns an options object based on any saved options and the default options
+	function restoreOptions() {
+		var options = $.extend( {}, defaultOptions );
+
+		if ( canSaveOptions() ) {
+			$.each( defaultOptions, function( name ) {
+				var saved = GM_getValue( name );
+				if ( saved !== undefined ) {
+					options[ name ] = saved;
+				}
+			} );
+		}
+
+		return options;
+	}
+
+	// saves the given options object
+	function saveOptions( options ) {
+		if ( canSaveOptions() ) {
+			$.each( defaultOptions, function ( name ) { GM_setValue( name, options[ name ] ); } );
+		}
+	}
+
+	// returns true if the current page is a google cache page
+	function isCachePage() {
+		var str = document.title,
+			prefix = decodeURIComponent( query.replace( /\+/g, ' ' ) ) + ' - ',
+			result = true;
+
+		if ( str.indexOf( prefix ) === 0 ) {
+			str = str.replace( prefix, '' );
+			result = str.indexOf( 'Google' ) === -1 || str.indexOf( ' - ' ) > -1;
+		}
+
+		return result;
+	}
+
+	// finds text-only / full version link, and gathers link details
+	function scanLinks( cacheTerm ) {
+		// get a snapshot from the live DOM
+		var links = document.evaluate( '//a[@href]',
+		                               document,
+		                               null,
+		                               XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+		                               null ),
+			list = [],
+			tmplHref = document.location.href.replace(document.location.hash, ''),
+			changeVersion, link, href, hash, cacheHref, cacheLink, i;
+
+		for ( i = 0; ( link = links.snapshotItem( i ) ); i++ ) {
+			if ( !changeVersion ) {
+				// find last link in the cache page header (the "Text-only version" or "Full version" link)
+				if ( link.pathname === '/search' && /cache:.*&strip=[01]$/.test( link.search ) ) {
+					changeVersion = link;
+				}
+
+			} else {
+				// gather link details
+				if ( /^https?:$/.test( link.protocol ) ) {
+					href = link.href;
+					hash = link.hash;
+					cacheHref = tmplHref.replace( cacheTerm, encodeURIComponent( 'cache:' + href.replace( hash, '' ) ) ) + hash;
+					cacheLink = $( '<a href="' + cacheHref + '" class="googleCache' + ID + '">' + options.cacheLinkText + '</a>' );
+
+					list.push( {
+						link: link,
+						cacheLink: cacheLink,
+						href: href,
+						cacheHref: cacheHref
+					} );
+
+					$.insertAfter( cacheLink, link );
+				}
+			}
+		}
+
+		list.changeVersion = changeVersion;
+		return list;
+	}
+
+	// updates hrefs for links
+	function updateLinkHrefs( list, isOriginalHref ) {
+		var prop = isOriginalHref ? 'href' : 'cacheHref';
+		$.each( list, function() { this.link.href = this[ prop ]; } );
+	}
+
+	// make cache links visible or hidden
+	function setCacheLinkVisibility( isVisible ) { hideCacheLinksStyle.disabled = hideCacheLinksStyle.sheet.disabled = isVisible; }
 
 
 
