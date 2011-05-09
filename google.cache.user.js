@@ -56,7 +56,7 @@
 // v0.1 (2008-07-31)
 // - Initial version
 
-(function( document, head, undefined ) {
+(function( window, document, head, undefined ) {
 	// XXX move this below
 	var ID = ( Math.random() + '' ).replace( /\D/g, '' );
 
@@ -210,7 +210,7 @@
 			if ( el && context && !( context.compareDocumentPosition( el ) & 16 ) ) {
 				el = undefined;
 			}
-			return el;
+			return el ? [ el ] : [];
 		}
 
 		return ( context || document ).getElementsByTagName( string );
@@ -277,22 +277,17 @@
 		options = restoreOptions(),
 
 		// link details
-		links,
-
-		msg,                // message element
-		optsPanel,          // options panel
-		el,                 // temp element
-		a,                  // temp array / element
-		i;                  // loop counter / temp variable
+		links;
 
 
+	/*
+	 * main
+	 */
 
 	// we can't continue without this information
 	if ( !searchQuery || !cacheTerm ) {
 		return;
 	}
-
-
 
 	// save options
 	saveOptions( options );
@@ -300,19 +295,14 @@
 	// replace %s here using the current cacheLinkText
 	strings.cacheLinkExplanation = strings.cacheLinkExplanation.replace(/%s/g, '<a href="" class="googleCache' + ID + '">' + options.cacheLinkText + '</a>');
 
-
-
 	// add our css to the cache page
 	head.appendChild($('<style type="text/css">' + css + '</style>'));
-
-
 
 	// if Google hasn't cached the original page, add a link for the original URL
 	if (!isCachePage(searchQuery)) {
 		addOriginalLink( decodeURIComponent( cacheTerm ).replace( /^cache:/, '' ) );
 		return;
 	}
-
 
 	links = scanLinks( cacheTerm );
 
@@ -331,79 +321,7 @@
 	' ) );
 	setCacheLinkColors();
 
-	// add our explanation text / option panel to the cache page header
-	el = $('\
-		<div id="googleCacheExplanation' + ID + '">\
-			<span></span>&nbsp;&nbsp;<a href="#"></a>\
-			<div>\
-				<input type="checkbox" id="googleCacheRedirectPageLinks' + ID + '" /><label for="googleCacheRedirectPageLinks' + ID + '">' + strings.redirectPageLinksLabel + '</label>\
-			</div>\
-		</div>\
-	');
-	msg = $('span', el)[0];
-	optsPanel = $('div', el)[0];
-	a = $('a', el)[0];
-	a.addEventListener('click', toggleOptionsPanel, false);
-	i = $('input', el)[0];
-	i.checked = options.redirectPageLinks;
-	i.addEventListener('click', toggleCacheLinks, false);
-	links.changeVersion.parentNode.parentNode.appendChild(el);
-	toggleOptionsPanel.call(a);
-	toggleCacheLinks.call(i);
-
-	if (canSaveOptions()) {
-		el = $('\
-			<table cellpadding="0" cellspacing="0" border="0">\
-				<tr>\
-					<th colspan="3">' + strings.cacheLinkOptions + '</th>\
-				</tr>\
-				<tr>\
-					<td><label for="googleCacheCacheLinkText' + ID + '">' + strings.cacheLinkTextLabel + '</label></td>\
-					<td><input type="text" id="googleCacheCacheLinkText' + ID + '" value="' + options.cacheLinkText + '" /></td>\
-					<td>' + strings.reload + '</td>\
-				</tr>\
-				<tr>\
-					<td><label for="googleCacheCacheLinkBackgroundColor' + ID + '">' + strings.cacheLinkBackgroundColorLabel + '</label></td>\
-					<td><input type="text" id="googleCacheCacheLinkBackgroundColor' + ID + '" value="' + options.cacheLinkBackgroundColor + '" /></td>\
-					<td></td>\
-				</tr>\
-				<tr>\
-					<td><label for="googleCacheCacheLinkTextColor' + ID + '">' + strings.cacheLinkTextColorLabel + '</label></td>\
-					<td><input type="text" id="googleCacheCacheLinkTextColor' + ID + '" value="' + options.cacheLinkTextColor + '" /></td>\
-					<td></td>\
-				</tr>\
-			</table>\
-		');
-		i = $('input', el);
-		i[0].addEventListener('change', function () {
-			this.value = $.trim(this.value);
-			if (!this.value) {
-				this.value = defaultOptions.cacheLinkText;
-			}
-			options.cacheLinkText = this.value;
-			saveOptions( options );
-		}, false);
-		i[1].addEventListener('change', function () {
-			this.value = $.trim(this.value);
-			if (!this.value) {
-				this.value = defaultOptions.cacheLinkBackgroundColor;
-			}
-			options.cacheLinkBackgroundColor = this.value;
-			setCacheLinkColors();
-			saveOptions( options );
-		}, false);
-		i[2].addEventListener('change', function () {
-			this.value = $.trim(this.value);
-			if (!this.value) {
-				this.value = defaultOptions.cacheLinkTextColor;
-			}
-			options.cacheLinkTextColor = this.value;
-			setCacheLinkColors();
-			saveOptions( options );
-		}, false);
-		optsPanel.appendChild(el);
-		optsPanel.appendChild(document.createTextNode(strings.textOptionInstructions));
-	}
+	addHeader( links.changeVersion.parentNode.parentNode );
 
 
 
@@ -554,13 +472,13 @@
 
 	// make cache links visible or hidden
 	function setCacheLinkVisibility( isVisible ) {
-		var style = $( '#googleCacheHideCacheLinks' + ID );
+		var style = $( '#googleCacheHideCacheLinks' + ID )[ 0 ];
 		style.disabled = style.sheet.disabled = isVisible;
 	}
 
 	// set colours for cache links
 	function setCacheLinkColors() {
-		var prevStyle = $( '#googleCacheCacheLinkColors' + ID ),
+		var prevStyle = $( '#googleCacheCacheLinkColors' + ID )[ 0 ],
 			curStyle = $( '\
 				<style id="googleCacheCacheLinkColors' + ID + '" type="text/css">\
 					a.googleCache' + ID + ' {\
@@ -604,39 +522,140 @@
 		}
 	}
 
+	// adds our explanation text and option panel to the cache page header
+	function addHeader( container ) {
+		var link, input;
 
+		container.appendChild( $( '\
+			<div id="googleCacheExplanation' + ID + '">\
+				<span id="googleCacheMessage' + ID + '"></span>&nbsp;\
+				<a href="" id="googleCacheOptionsLink' + ID + '"></a>\
+				\
+				<div id="googleCacheOptions' + ID + '">\
+					<input type="checkbox" id="googleCacheRedirectPageLinks' + ID + '" />\
+					<label for="googleCacheRedirectPageLinks' + ID + '">' + strings.redirectPageLinksLabel + '</label>\
+					' +
+					(canSaveOptions() ? ('\
+					<table cellpadding="0" cellspacing="0" border="0">\
+						<tr>\
+							<th colspan="3">' + strings.cacheLinkOptions + '</th>\
+						</tr>\
+						<tr>\
+							<td><label for="googleCacheCacheLinkText' + ID + '">' + strings.cacheLinkTextLabel + '</label></td>\
+							<td><input type="text" id="googleCacheCacheLinkText' + ID + '" value="' + options.cacheLinkText + '" /></td>\
+							<td>' + strings.reload + '</td>\
+						</tr>\
+						<tr>\
+							<td><label for="googleCacheCacheLinkBackgroundColor' + ID + '">' + strings.cacheLinkBackgroundColorLabel + '</label></td>\
+							<td><input type="text" id="googleCacheCacheLinkBackgroundColor' + ID + '" value="' + options.cacheLinkBackgroundColor + '" /></td>\
+							<td></td>\
+						</tr>\
+						<tr>\
+							<td><label for="googleCacheCacheLinkTextColor' + ID + '">' + strings.cacheLinkTextColorLabel + '</label></td>\
+							<td><input type="text" id="googleCacheCacheLinkTextColor' + ID + '" value="' + options.cacheLinkTextColor + '" /></td>\
+							<td></td>\
+						</tr>\
+					</table>\
+					' +
+					strings.textOptionInstructions) : '') + '\
+				</div>\
+			</div>\
+		' ) );
 
+		link = $( '#googleCacheOptionsLink' + ID )[ 0 ];
+		link.addEventListener( 'click', optionsLinkClick, false );
+		optionsLinkClick.call( link );
 
+		input = $( '#googleCacheRedirectPageLinks' + ID )[ 0 ];
+		input.checked = options.redirectPageLinks;
+		input.addEventListener( 'click', redirectPageLinksClick, false );
+		redirectPageLinksClick.call( input );
 
+		if ( canSaveOptions() ) {
+			$( '#googleCacheCacheLinkText' + ID )[ 0 ].addEventListener( 'change', cacheLinkTextChange, false );
+			$( '#googleCacheCacheLinkBackgroundColor' + ID )[ 0 ].addEventListener( 'change', cacheLinkBackgroundColorChange, false );
+			$( '#googleCacheCacheLinkTextColor' + ID )[ 0 ].addEventListener( 'change', cacheLinkTextColorChange, false );
+		}
 
+		window.addEventListener( 'unload', function() {
+			window.removeEventListener( 'unload', arguments.callee, false );
 
+			$( '#googleCacheOptionsLink' + ID )[ 0 ].removeEventListener( 'click', optionsLinkClick, false );
+			$( '#googleCacheRedirectPageLinks' + ID )[ 0 ].removeEventListener( 'click', redirectPageLinksClick, false );
 
+			if ( canSaveOptions() ) {
+				$( '#googleCacheCacheLinkText' + ID )[ 0 ].removeEventListener( 'change', cacheLinkTextChange, false );
+				$( '#googleCacheCacheLinkBackgroundColor' + ID )[ 0 ].removeEventListener( 'change', cacheLinkBackgroundColorChange, false );
+				$( '#googleCacheCacheLinkTextColor' + ID )[ 0 ].removeEventListener( 'change', cacheLinkTextColorChange, false );
+			}
+		}, false);
+	}
 
 
 
 	// event handlers
 
-	function toggleOptionsPanel(e) {
-		if (e) {
+	function optionsLinkClick( e ) {
+		var panel = $( '#googleCacheOptions' + ID )[ 0 ];
+
+		if ( e ) {
 			e.preventDefault();
 		}
-		if (optsPanel.style.display == 'none') {
+
+		if ( panel.style.display === 'none' ) {
 			this.innerHTML = strings.hideOptions;
-			optsPanel.style.display = 'block';
+			panel.style.display = 'block';
 		} else {
 			this.innerHTML = strings.showOptions;
-			optsPanel.style.display = 'none';
+			panel.style.display = 'none';
 		}
 	}
 
-	function toggleCacheLinks() {
+	function redirectPageLinksClick() {
 		var redirect = this.checked;
+
 		options.redirectPageLinks = redirect;
-		updateLinkHrefs(links, !redirect);
-		setCacheLinkVisibility(!redirect);
-		msg.innerHTML = (redirect) ? strings.redirectLinkExplanation : strings.cacheLinkExplanation;
+		saveOptions( options );
+
+		updateLinkHrefs( links, !redirect );
+		setCacheLinkVisibility( !redirect );
+
+		$( '#googleCacheMessage' + ID )[ 0 ].innerHTML = redirect ? strings.redirectLinkExplanation : strings.cacheLinkExplanation;
+	}
+
+	function cacheLinkTextChange() {
+		this.value = $.trim( this.value );
+		if ( !this.value ) {
+			this.value = defaultOptions.cacheLinkText;
+		}
+
+		options.cacheLinkText = this.value;
 		saveOptions( options );
 	}
 
-})( document, document.getElementsByTagName('head')[0] );
+	function cacheLinkBackgroundColorChange() {
+		this.value = $.trim( this.value );
+		if ( !this.value ) {
+			this.value = defaultOptions.cacheLinkBackgroundColor;
+		}
+
+		options.cacheLinkBackgroundColor = this.value;
+		saveOptions( options );
+
+		setCacheLinkColors();
+	}
+
+	function cacheLinkTextColorChange() {
+		this.value = $.trim( this.value );
+		if ( !this.value ) {
+			this.value = defaultOptions.cacheLinkTextColor;
+		}
+
+		options.cacheLinkTextColor = this.value;
+		saveOptions( options );
+
+		setCacheLinkColors();
+	}
+
+})( window, document, document.getElementsByTagName('head')[0] );
 
