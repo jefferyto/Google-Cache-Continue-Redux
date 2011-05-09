@@ -593,8 +593,11 @@
 
 
 
-	// event handlers
+	/*
+	 * event handlers
+	 */
 
+	// show / hide options panel
 	function optionsLinkClick( e ) {
 		var panel = $( '#googleCacheOptions' + ID )[ 0 ];
 
