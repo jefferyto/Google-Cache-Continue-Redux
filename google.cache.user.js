@@ -39,6 +39,11 @@
 
 // Redux changelog:
 
+// v0.5 (?)
+// - Works with cache pages under HTTPS / SSL
+// - Cache link text change takes effect immediately, instead of after page reload
+// - Another refactoring
+
 // v0.4 (2010-02-10)
 // - Google Chrome compatibility (thanks Norman Rasmussen)
 // - Added option to redirect page links to the Google cache, instead of adding cache links
