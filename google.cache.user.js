@@ -57,11 +57,9 @@
 // - Initial version
 
 (function( window, document, head, undefined ) {
-	// XXX move this below
-	var ID = ( Math.random() + '' ).replace( /\D/g, '' );
 
 	/*
-	 * start user editable parts
+	 * user editable parts, start!
 	 */
 
 	// default options
@@ -124,74 +122,124 @@
 		textOptionInstructions: 'Leave a field blank to reset to default'
 	},
 
-	// modify these to change the appearance of the cache links
-	css = '\
-		a.googleCache' + ID + ' {\
-			position: static !important;\
-			display: inline !important;\
-			visibility: visible !important;\
-			margin: 0.3ex !important;\
-			padding: 0 0.6ex 0.4ex 0.3ex !important;\
-			border: none !important;\
-			font: normal bold x-small sans-serif !important;\
-			text-align: left !important;\
-			text-decoration: none !important;\
-			text-transform: none !important;\
-			letter-spacing: normal !important;\
-			word-spacing: normal !important;\
-			vertical-align: baseline !important;\
-			cursor: pointer !important;\
-		}\
-		#googleCacheExplanation' + ID + ' {\
-			position: static !important;\
-			display: block !important;\
-			visibility: visible !important;\
-			width: auto !important;\
-			height: auto !important;\
-			margin: 1em 0 !important;;\
-			padding: 1ex 0.5ex !important;;\
-			border: 1px solid #3366CC;\
-			font-family: inherit !important;\
-			font-style: normal !important;\
-			font-variant: normal !important;\
-			font-weight: normal !important;\
-			font-stretch: normal !important;\
-			font-size: inherit !important;\
-			font-size-adjust: none !important;\
-			line-height: inherit !important;\
-			background: transparent !important;\
-			color: black !important;\
-			text-align: left !important;\
-			text-decoration: none !important;\
-			text-transform: none !important;\
-			letter-spacing: normal !important;\
-			word-spacing: normal !important;\
-			vertical-align: baseline !important;\
-			cursor: auto !important;\
-		}\
-		#googleCacheExplanation' + ID + ' div {\
-			margin-top: 0.5em !important;\
-		}\
-		#googleCacheExplanation' + ID + ' input, #googleCacheExplanation' + ID + ' label {\
-			vertical-align: middle !important;\
-		}\
-		#googleCacheExplanation' + ID + ' table {\
-			margin: 0.5em 0 !important;\
-			border-collapse: collapse !important;\
-		}\
-		#googleCacheExplanation' + ID + ' td {\
-			padding-right: 5px !important;\
-		}\
-	';
+	// modify these to change the appearance of things
+	css = {
+		cacheLink: {
+			'position': 'static',
+			'display': 'inline',
+			'visibility': 'visible',
+			'margin': '0.3ex',
+			'padding': '0 0.6ex 0.4ex 0.3ex',
+			'border': 'none',
+			'font': 'normal bold x-small sans-serif',
+			'text-align': 'left',
+			'text-decoration': 'none',
+			'text-transform': 'none',
+			'letter-spacing': 'normal',
+			'word-spacing': 'normal',
+			'vertical-align': 'baseline',
+			'cursor': 'pointer'
+		},
+
+		uncached: {
+			'position': 'static',
+			'display': 'block',
+			'visibility': 'visible',
+			'width': 'auto',
+			'height': 'auto',
+			'margin': '1em 0;',
+			'padding': '1ex 0.5ex',
+			'border': '1px solid #3366CC',
+			'font-family': 'inherit',
+			'font-style': 'normal',
+			'font-variant': 'normal',
+			'font-weight': 'normal',
+			'font-stretch': 'normal',
+			'font-size': 'inherit',
+			'font-size-adjust': 'none',
+			'line-height': 'inherit',
+			'background': 'transparent',
+			'color': 'black',
+			'text-align': 'left',
+			'text-decoration': 'none',
+			'text-transform': 'none',
+			'letter-spacing': 'normal',
+			'word-spacing': 'normal',
+			'vertical-align': 'baseline',
+			'cursor': 'auto'
+		},
+
+		explanation: {
+			'position': 'static',
+			'display': 'block',
+			'visibility': 'visible',
+			'width': 'auto',
+			'height': 'auto',
+			'margin': '1em 0;',
+			'padding': '1ex 0.5ex',
+			'border': '1px solid #3366CC',
+			'font-family': 'inherit',
+			'font-style': 'normal',
+			'font-variant': 'normal',
+			'font-weight': 'normal',
+			'font-stretch': 'normal',
+			'font-size': 'inherit',
+			'font-size-adjust': 'none',
+			'line-height': 'inherit',
+			'background': 'transparent',
+			'color': 'black',
+			'text-align': 'left',
+			'text-decoration': 'none',
+			'text-transform': 'none',
+			'letter-spacing': 'normal',
+			'word-spacing': 'normal',
+			'vertical-align': 'baseline',
+			'cursor': 'auto'
+		},
+
+		options: {
+			panel: {
+				'margin-top': '0.5em'
+			},
+
+			link: {
+			},
+
+			input: {
+				checkbox: {
+					'vertical-align': 'middle'
+				},
+
+				text: {
+				}
+			},
+
+			label: {
+				'vertical-align': 'middle'
+			},
+
+			table: {
+				'margin': '0.5em 0',
+				'border-collapse': 'collapse'
+			},
+
+			th: {
+			},
+
+			td: {
+				'padding-right': '5px'
+			}
+		}
+	};
 
 	/*
-	 * end user editable parts
+	 * user editable parts, end!
 	 */
 
 
 
 	/*
-	 * poor-man's jQuery
+	 * poor-man's jQuery!
 	 */
 
 	var $ = function( string, context ) {
@@ -264,11 +312,14 @@
 
 
 	/*
-	 * globals!
+	 * main!
 	 */
 
+		// a unique id for elements we add to the page
+	var ID = ( Math.random() + '' ).replace( /\D/g, '' ),
+
 		// (encoded) search query (contains cache term)
-	var searchQuery = findSearchQuery(),
+		searchQuery = findSearchQuery(),
 
 		// (encoded) cache term ("cache%3Ahttp%3A%2F%2Fwww.example.com")
 		cacheTerm = findCacheTerm( searchQuery ),
@@ -278,11 +329,6 @@
 
 		// link details
 		links;
-
-
-	/*
-	 * main
-	 */
 
 	// we can't continue without this information
 	if ( !searchQuery || !cacheTerm ) {
@@ -294,9 +340,6 @@
 
 	// replace %s here using the current cacheLinkText
 	strings.cacheLinkExplanation = strings.cacheLinkExplanation.replace(/%s/g, '<a href="" class="googleCache' + ID + '">' + options.cacheLinkText + '</a>');
-
-	// add our css to the cache page
-	head.appendChild($('<style type="text/css">' + css + '</style>'));
 
 	// if Google hasn't cached the original page, add a link for the original URL
 	if (!isCachePage(searchQuery)) {
@@ -311,19 +354,13 @@
 		return;
 	}
 
-	// add css specific to the cache page
-	head.appendChild( $( '\
-		<style id="googleCacheHideCacheLinks' + ID + '" type="text/css">\
-			a.googleCache' + ID + ' {\
-				display: none !important;\
-			}\
-		</style>\
-	' ) );
-	setCacheLinkColors();
-
-	addHeader( links.changeVersion.parentNode.parentNode );
+	addExplanation( links.changeVersion.parentNode.parentNode );
 
 
+
+	/*
+	 * functions!
+	 */
 
 	/*
 	 * save / restore options
@@ -470,32 +507,62 @@
 	 * manipulate styles
 	 */
 
+	// returns a style element for the given selector and rules
+	function getStyleElement( selector, rules, id ) {
+		var buf = [ '<style id="', id || '', '" type="text/css">', selector, '{' ];
+
+		$.each( rules, function( prop, val ) { buf.push( prop, ':', val, ';' ); } );
+
+		buf.push('}</style>');
+
+		return $( buf.join( '' ) );
+	}
+
+	// returns a string for the given rules object
+	function getInlineStyle( rules ) {
+		var buf = [ 'style="' ];
+
+		$.each( rules, function( prop, val ) { buf.push( prop, ':', val, ';' ); } );
+
+		buf.push('"');
+
+		return buf.join( '' );
+	}
+
 	// make cache links visible or hidden
 	function setCacheLinkVisibility( isVisible ) {
 		var style = $( '#googleCacheHideCacheLinks' + ID )[ 0 ];
+
+		if ( !style ) {
+			style = getStyleElement( 'a.googleCache' + ID, { 'display': 'none !important' }, 'googleCacheHideCacheLinks' + ID );
+			head.appendChild( style );
+		}
+
 		style.disabled = style.sheet.disabled = isVisible;
 	}
 
 	// set colours for cache links
 	function setCacheLinkColors() {
-		var prevStyle = $( '#googleCacheCacheLinkColors' + ID )[ 0 ],
-			curStyle = $( '\
-				<style id="googleCacheCacheLinkColors' + ID + '" type="text/css">\
-					a.googleCache' + ID + ' {\
-						background: ' + options.cacheLinkBackgroundColor + ' !important;\
-						color: ' + options.cacheLinkTextColor + ' !important;\
-					}\
-					a.googleCache' + ID + ':hover {\
-						background: ' + options.cacheLinkTextColor + ' !important;\
-						color: ' + options.cacheLinkBackgroundColor + ' !important;\
-					}\
-				</style>\
-			' );
+		var prevNormal = $( '#googleCacheCacheLinkColors' + ID )[ 0 ],
+			prevHover = $( '#googleCacheCacheLinkHoverColors' + ID )[ 0 ],
+			curNormal = getStyleElement( 'a.googleCache' + ID, {
+				'background': options.cacheLinkBackgroundColor + ' !important',
+				'color': options.cacheLinkTextColor + ' !important'
+			}, 'googleCacheCacheLinkColors' + ID ),
+			curHover = getStyleElement( 'a.googleCache' + ID + ':hover', {
+				'background': options.cacheLinkTextColor + ' !important',
+				'color': options.cacheLinkBackgroundColor + ' !important'
+			}, 'googleCacheCacheLinkHoverColors' + ID );
 
-		if ( prevStyle ) {
-			head.replaceChild( curStyle, prevStyle );
+		if ( prevNormal ) {
+			head.replaceChild( curNormal, prevNormal );
 		} else {
-			head.appendChild( curStyle );
+			head.appendChild( curNormal );
+		}
+		if ( prevHover ) {
+			head.replaceChild( curHover, prevHover );
+		} else {
+			head.appendChild( curHover );
 		}
 	}
 
@@ -518,49 +585,75 @@
 			msg = strings.uncached.replace( /%s/g, '<a href="' + ( url.indexOf( '://' ) === -1 ? 'http://' : '' ) + url + '">' + url + '</a>' );
 
 		if ( ul ) {
-			$.insertAfter( $( '<p id="googleCacheExplanation' + ID + '">' + msg + '</p>' ), ul );
+			$.insertAfter( $( '<p ' + getInlineStyle( css.uncached ) + '>' + msg + '</p>' ), ul );
 		}
 	}
 
 	// adds our explanation text and option panel to the cache page header
-	function addHeader( container ) {
+	function addExplanation( container ) {
 		var link, input;
 
-		container.appendChild( $( '\
-			<div id="googleCacheExplanation' + ID + '">\
-				<span id="googleCacheMessage' + ID + '"></span>&nbsp;\
-				<a href="" id="googleCacheOptionsLink' + ID + '"></a>\
-				\
-				<div id="googleCacheOptions' + ID + '">\
-					<input type="checkbox" id="googleCacheRedirectPageLinks' + ID + '" />\
-					<label for="googleCacheRedirectPageLinks' + ID + '">' + strings.redirectPageLinksLabel + '</label>\
-					' +
-					(canSaveOptions() ? ('\
-					<table cellpadding="0" cellspacing="0" border="0">\
-						<tr>\
-							<th colspan="3">' + strings.cacheLinkOptions + '</th>\
-						</tr>\
-						<tr>\
-							<td><label for="googleCacheCacheLinkText' + ID + '">' + strings.cacheLinkTextLabel + '</label></td>\
-							<td><input type="text" id="googleCacheCacheLinkText' + ID + '" value="' + options.cacheLinkText + '" /></td>\
-							<td>' + strings.reload + '</td>\
-						</tr>\
-						<tr>\
-							<td><label for="googleCacheCacheLinkBackgroundColor' + ID + '">' + strings.cacheLinkBackgroundColorLabel + '</label></td>\
-							<td><input type="text" id="googleCacheCacheLinkBackgroundColor' + ID + '" value="' + options.cacheLinkBackgroundColor + '" /></td>\
-							<td></td>\
-						</tr>\
-						<tr>\
-							<td><label for="googleCacheCacheLinkTextColor' + ID + '">' + strings.cacheLinkTextColorLabel + '</label></td>\
-							<td><input type="text" id="googleCacheCacheLinkTextColor' + ID + '" value="' + options.cacheLinkTextColor + '" /></td>\
-							<td></td>\
-						</tr>\
-					</table>\
-					' +
-					strings.textOptionInstructions) : '') + '\
-				</div>\
-			</div>\
-		' ) );
+		// OMG this is ugly
+		container.appendChild( $( [
+			'<div ', getInlineStyle( css.explanation ), '>',
+				'<span id="googleCacheMessage', ID, '"></span>&nbsp;&nbsp;',
+				'<a href="" id="googleCacheOptionsLink', ID, '" ', getInlineStyle( css.options.link ), '></a>',
+
+				'<div id="googleCacheOptions', ID, '" ', getInlineStyle( css.options.panel ), '>',
+					'<input type="checkbox" id="googleCacheRedirectPageLinks', ID, '" ', getInlineStyle( css.options.input.checkbox ), ' />',
+					'<label for="googleCacheRedirectPageLinks', ID, '" ', getInlineStyle( css.options.label ), '>',
+						strings.redirectPageLinksLabel,
+					'</label>',
+
+					canSaveOptions() ? [
+						'<table cellpadding="0" cellspacing="0" border="0" ', getInlineStyle( css.options.table ), '>',
+							'<tr>',
+								'<th colspan="3" ', getInlineStyle( css.options.th ), '>',
+									strings.cacheLinkOptions,
+								'</th>',
+							'</tr>',
+							'<tr>',
+								'<td ', getInlineStyle( css.options.td ) + '>',
+									'<label for="googleCacheCacheLinkText', ID, '" ', getInlineStyle( css.options.label ), '>',
+										strings.cacheLinkTextLabel,
+									'</label>',
+								'</td>',
+								'<td ', getInlineStyle( css.options.td ) + '>',
+									'<input type="text" id="googleCacheCacheLinkText', ID, '" value="', options.cacheLinkText, '" ', getInlineStyle( css.options.input.text ) + ' />',
+								'</td>',
+								'<td ', getInlineStyle( css.options.td ) + '>',
+									strings.reload,
+								'</td>',
+							'</tr>',
+							'<tr>',
+								'<td ', getInlineStyle( css.options.td ) + '>',
+									'<label for="googleCacheCacheLinkBackgroundColor', ID, '" ', getInlineStyle( css.options.label ) + '>',
+										strings.cacheLinkBackgroundColorLabel,
+									'</label>',
+								'</td>',
+								'<td ', getInlineStyle( css.options.td ) + '>',
+									'<input type="text" id="googleCacheCacheLinkBackgroundColor', ID, '" value="', options.cacheLinkBackgroundColor, '" ', getInlineStyle( css.options.input.text ) + ' />',
+								'</td>',
+								'<td ', getInlineStyle( css.options.td ) + '></td>',
+							'</tr>',
+							'<tr>',
+								'<td ', getInlineStyle( css.options.td ) + '>',
+									'<label for="googleCacheCacheLinkTextColor', ID, '" ', getInlineStyle( css.options.label ) + '>',
+										strings.cacheLinkTextColorLabel,
+									'</label>',
+								'</td>',
+								'<td ', getInlineStyle( css.options.td ) + '>',
+									'<input type="text" id="googleCacheCacheLinkTextColor', ID, '" value="', options.cacheLinkTextColor, '" ', getInlineStyle( css.options.input.text ) + ' />',
+								'</td>',
+								'<td ', getInlineStyle( css.options.td ) + '></td>',
+							'</tr>',
+						'</table>',
+						strings.textOptionInstructions
+					].join( '' ) : '',
+
+				'</div>',
+			'</div>'
+		].join( '' ) ) );
 
 		link = $( '#googleCacheOptionsLink' + ID )[ 0 ];
 		link.addEventListener( 'click', optionsLinkClick, false );
@@ -570,6 +663,8 @@
 		input.checked = options.redirectPageLinks;
 		input.addEventListener( 'click', redirectPageLinksClick, false );
 		redirectPageLinksClick.call( input );
+
+		setCacheLinkColors();
 
 		if ( canSaveOptions() ) {
 			$( '#googleCacheCacheLinkText' + ID )[ 0 ].addEventListener( 'change', cacheLinkTextChange, false );
