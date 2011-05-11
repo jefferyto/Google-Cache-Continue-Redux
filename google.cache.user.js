@@ -366,11 +366,19 @@
 		addOriginalLink( decodeURIComponent( cacheTerm ).replace( /^cache:/, '' ) );
 	}
 
+	// cleanup
+	window.addEventListener( 'unload', function() {
+		window.removeEventListener( 'unload', arguments.callee, false );
+		searchQuery = cacheTerm = options = id = links = null;
+	}, false );
+
 
 
 	/*
 	 * functions!
 	 */
+
+
 
 	// returns a unique token string
 	function getToken() { return ( Math.random() + '' ).replace( /\D/g, '' ); }
