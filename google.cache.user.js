@@ -477,7 +477,7 @@
 					href = link.href;
 					hash = link.hash;
 					cacheHref = tmplHref.replace( cacheTerm, encodeURIComponent( 'cache:' + href.replace( hash, '' ) ) ) + hash;
-					cacheLink = $( '<a href="' + cacheHref + '" class="googleCache' + ID + '">' + options.cacheLinkText + '</a>' );
+					cacheLink = $( '<a href="' + cacheHref + '" class="googleCache' + ID + '" ' + getInlineStyle( css.cacheLink ) + '>' + options.cacheLinkText + '</a>' );
 
 					list.push( {
 						link: link,
@@ -715,7 +715,7 @@
 
 		$( '#googleCacheMessage' + ID )[ 0 ].innerHTML = redirect ?
 			strings.redirectLinkExplanation :
-			strings.cacheLinkExplanation.replace( /%s/g, '<a href="" id="googleCacheExampleCacheLink' + ID + '" class="googleCache' + ID + '">' + options.cacheLinkText + '</a>' );
+			strings.cacheLinkExplanation.replace( /%s/g, '<a href="" id="googleCacheExampleCacheLink' + ID + '" class="googleCache' + ID + '" ' + getInlineStyle( css.cacheLink ) + '>' + options.cacheLinkText + '</a>' );
 	}
 
 	function cacheLinkTextChange() {
