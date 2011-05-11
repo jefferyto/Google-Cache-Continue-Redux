@@ -335,22 +335,15 @@
 	// save options
 	saveOptions( options );
 
-	// replace %s here using the current cacheLinkText
-
-	// if Google hasn't cached the original page, add a link for the original URL
-	if (!isCachePage(searchQuery)) {
+	if (isCachePage(searchQuery)) {
+		links = scanLinks( cacheTerm );
+		if ( links.changeVersion ) {
+			addExplanation( links.changeVersion.parentNode.parentNode );
+		}
+	} else {
+		// if Google hasn't cached the original page, add a link for the original URL
 		addOriginalLink( decodeURIComponent( cacheTerm ).replace( /^cache:/, '' ) );
-		return;
 	}
-
-	links = scanLinks( cacheTerm );
-
-	if ( !links.changeVersion ) {
-		// we didn't find the text-only / full version link
-		return;
-	}
-
-	addExplanation( links.changeVersion.parentNode.parentNode );
 
 
 
