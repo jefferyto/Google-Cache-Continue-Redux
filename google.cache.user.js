@@ -1,8 +1,8 @@
 // Google Cache Continue Redux
 // Based on Google Cache Continue by Jonathon Ramsey
-// v0.4
+// v0.5
 
-// Copyright (C) 2005-2008 by
+// Copyright (C) 2005-2011 by
 //   Jonathon Ramsey (jonathon.ramsey@gmail.com)
 //   Jeffery To (jeffery.to @gmail.com)
 
