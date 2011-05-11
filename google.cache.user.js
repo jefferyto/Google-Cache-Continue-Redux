@@ -115,9 +115,6 @@
 		// cache link text colour option label
 		cacheLinkTextColorLabel: 'Text colour:',
 
-		// takes effect after page reload
-		reload: 'Takes effect after page reload',
-
 		// instruction text for text options
 		textOptionInstructions: 'Leave a field blank to reset to default'
 	},
@@ -339,7 +336,6 @@
 	saveOptions( options );
 
 	// replace %s here using the current cacheLinkText
-	strings.cacheLinkExplanation = strings.cacheLinkExplanation.replace(/%s/g, '<a href="" class="googleCache' + ID + '">' + options.cacheLinkText + '</a>');
 
 	// if Google hasn't cached the original page, add a link for the original URL
 	if (!isCachePage(searchQuery)) {
@@ -578,6 +574,12 @@
 		$.each( list, function() { this.link.href = this[ prop ]; } );
 	}
 
+	// updated link text for cache links
+	function updateCacheLinkText( list, text ) {
+		$( '#googleCacheExampleCacheLink' + ID )[ 0 ].innerHTML = text;
+		$.each( list, function() { this.cacheLink.innerHTML = text; } );
+	}
+
 	// adds a link for the original URL to the Google search results page
 	// safer to add after the list of suggestions
 	function addOriginalLink( url ) {
@@ -608,7 +610,7 @@
 					canSaveOptions() ? [
 						'<table cellpadding="0" cellspacing="0" border="0" ', getInlineStyle( css.options.table ), '>',
 							'<tr>',
-								'<th colspan="3" ', getInlineStyle( css.options.th ), '>',
+								'<th colspan="2" ', getInlineStyle( css.options.th ), '>',
 									strings.cacheLinkOptions,
 								'</th>',
 							'</tr>',
@@ -621,9 +623,6 @@
 								'<td ', getInlineStyle( css.options.td ) + '>',
 									'<input type="text" id="googleCacheCacheLinkText', ID, '" value="', options.cacheLinkText, '" ', getInlineStyle( css.options.input.text ) + ' />',
 								'</td>',
-								'<td ', getInlineStyle( css.options.td ) + '>',
-									strings.reload,
-								'</td>',
 							'</tr>',
 							'<tr>',
 								'<td ', getInlineStyle( css.options.td ) + '>',
@@ -634,7 +633,6 @@
 								'<td ', getInlineStyle( css.options.td ) + '>',
 									'<input type="text" id="googleCacheCacheLinkBackgroundColor', ID, '" value="', options.cacheLinkBackgroundColor, '" ', getInlineStyle( css.options.input.text ) + ' />',
 								'</td>',
-								'<td ', getInlineStyle( css.options.td ) + '></td>',
 							'</tr>',
 							'<tr>',
 								'<td ', getInlineStyle( css.options.td ) + '>',
@@ -645,7 +643,6 @@
 								'<td ', getInlineStyle( css.options.td ) + '>',
 									'<input type="text" id="googleCacheCacheLinkTextColor', ID, '" value="', options.cacheLinkTextColor, '" ', getInlineStyle( css.options.input.text ) + ' />',
 								'</td>',
-								'<td ', getInlineStyle( css.options.td ) + '></td>',
 							'</tr>',
 						'</table>',
 						strings.textOptionInstructions
@@ -718,7 +715,9 @@
 		updateLinkHrefs( links, !redirect );
 		setCacheLinkVisibility( !redirect );
 
-		$( '#googleCacheMessage' + ID )[ 0 ].innerHTML = redirect ? strings.redirectLinkExplanation : strings.cacheLinkExplanation;
+		$( '#googleCacheMessage' + ID )[ 0 ].innerHTML = redirect ?
+			strings.redirectLinkExplanation :
+			strings.cacheLinkExplanation.replace(/%s/g, '<a href="" id="googleCacheExampleCacheLink' + ID + '" class="googleCache' + ID + '">' + options.cacheLinkText + '</a>');
 	}
 
 	function cacheLinkTextChange() {
@@ -729,6 +728,8 @@
 
 		options.cacheLinkText = this.value;
 		saveOptions( options );
+
+		updateCacheLinkText( links, options.cacheLinkText );
 	}
 
 	function cacheLinkBackgroundColorChange() {
