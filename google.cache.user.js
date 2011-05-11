@@ -335,7 +335,7 @@
 	// save options
 	saveOptions( options );
 
-	if (isCachePage(searchQuery)) {
+	if ( isCachePage( searchQuery ) ) {
 		links = scanLinks( cacheTerm );
 		if ( links.changeVersion ) {
 			addExplanation( links.changeVersion.parentNode.parentNode );
@@ -710,7 +710,7 @@
 
 		$( '#googleCacheMessage' + ID )[ 0 ].innerHTML = redirect ?
 			strings.redirectLinkExplanation :
-			strings.cacheLinkExplanation.replace(/%s/g, '<a href="" id="googleCacheExampleCacheLink' + ID + '" class="googleCache' + ID + '">' + options.cacheLinkText + '</a>');
+			strings.cacheLinkExplanation.replace( /%s/g, '<a href="" id="googleCacheExampleCacheLink' + ID + '" class="googleCache' + ID + '">' + options.cacheLinkText + '</a>' );
 	}
 
 	function cacheLinkTextChange() {
