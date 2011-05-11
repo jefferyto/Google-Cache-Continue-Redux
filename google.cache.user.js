@@ -354,7 +354,7 @@
 	saveOptions( options );
 
 	// make element ids unique
-	uniqueifyIds();
+	uniqueifyIds( id );
 
 	if ( isCachePage( searchQuery ) ) {
 		links = scanLinks( cacheTerm );
@@ -376,7 +376,7 @@
 	function getToken() { return ( Math.random() + '' ).replace( /\D/g, '' ); }
 
 	// prepends 'googleCache' and appends a unique token to each id
-	function uniqueifyIds() {
+	function uniqueifyIds( id ) {
 		var token = getToken();
 		$.each( id, function( prop, val ) { id[ prop ] = 'googleCache' + val + token; } );
 	}
