@@ -317,17 +317,30 @@
 	 * main!
 	 */
 
-		// a unique id for elements we add to the page
-	var ID = ( Math.random() + '' ).replace( /\D/g, '' ),
-
 		// (encoded) search query (contains cache term)
-		searchQuery = findSearchQuery(),
+	var searchQuery = findSearchQuery(),
 
 		// (encoded) cache term ("cache%3Ahttp%3A%2F%2Fwww.example.com")
 		cacheTerm = findCacheTerm( searchQuery ),
 
 		// script options
 		options = restoreOptions(),
+
+		// element ids
+		id = {
+			cacheLink: 'Link', // this is actually used as a classname
+			hideCacheLinks: 'HideCacheLinks',
+			cacheLinkColors: 'CacheLinkColors',
+			cacheLinkHoverColors: 'CacheLinkHoverColors',
+			exampleCacheLink: 'ExampleCacheLink',
+			message: 'Message',
+			optionsLink: 'OptionsLink',
+			options: 'Options',
+			redirectPageLinks: 'RedirectPageLinks',
+			cacheLinkText: 'CacheLinkText',
+			cacheLinkBackgroundColor: 'CacheLinkBackgroundColor',
+			cacheLinkTextColor: 'CacheLinkTextColor'
+		},
 
 		// link details
 		links;
@@ -339,6 +352,9 @@
 
 	// save options
 	saveOptions( options );
+
+	// make element ids unique
+	uniqueifyIds();
 
 	if ( isCachePage( searchQuery ) ) {
 		links = scanLinks( cacheTerm );
@@ -356,18 +372,32 @@
 	 * functions!
 	 */
 
+	// returns a unique token string
+	function getToken() { return ( Math.random() + '' ).replace( /\D/g, '' ); }
+
+	// prepends 'googleCache' and appends a unique token to each id
+	function uniqueifyIds() {
+		var token = getToken();
+		$.each( id, function( prop, val ) { id[ prop ] = 'googleCache' + val + token; } );
+	}
+
+
+
 	/*
 	 * save / restore options
 	 */
 
 	// returns true if the browser supports GM_getValue / GM_setValue
 	function canSaveOptions() {
-		var me = arguments.callee, name = 'testOption' + ID, value;
+		var me = arguments.callee,
+			token = getToken(),
+			name = 'testOption' + token,
+			value;
 
 		if ( me.cached === undefined ) {
 			if ( typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined' ) {
 				try {
-					GM_setValue( name, ID );
+					GM_setValue( name, token );
 					value = GM_getValue( name );
 					GM_setValue( name, '' );
 				} catch (e) {
@@ -375,7 +405,7 @@
 				}
 			}
 
-			me.cached = value === ID;
+			me.cached = value === token;
 		}
 
 		return me.cached;
@@ -400,7 +430,7 @@
 	// saves the given options object
 	function saveOptions( options ) {
 		if ( canSaveOptions() ) {
-			$.each( defaultOptions, function ( name ) { GM_setValue( name, options[ name ] ); } );
+			$.each( defaultOptions, function( name ) { GM_setValue( name, options[ name ] ); } );
 		}
 	}
 
@@ -477,7 +507,7 @@
 					href = link.href;
 					hash = link.hash;
 					cacheHref = tmplHref.replace( cacheTerm, encodeURIComponent( 'cache:' + href.replace( hash, '' ) ) ) + hash;
-					cacheLink = $( '<a href="' + cacheHref + '" class="googleCache' + ID + '" ' + getInlineStyle( css.cacheLink ) + '>' + options.cacheLinkText + '</a>' );
+					cacheLink = $( '<a href="' + cacheHref + '" class="' + id.cacheLink + '" ' + getInlineStyle( css.cacheLink ) + '>' + options.cacheLinkText + '</a>' );
 
 					list.push( {
 						link: link,
@@ -525,10 +555,10 @@
 
 	// make cache links visible or hidden
 	function setCacheLinkVisibility( isVisible ) {
-		var style = $( '#googleCacheHideCacheLinks' + ID )[ 0 ];
+		var style = $( '#' + id.hideCacheLinks )[ 0 ];
 
 		if ( !style ) {
-			style = getStyleElement( 'a.googleCache' + ID, { 'display': 'none !important' }, 'googleCacheHideCacheLinks' + ID );
+			style = getStyleElement( 'a.' + id.cacheLink, { 'display': 'none !important' }, id.hideCacheLinks );
 			head.appendChild( style );
 		}
 
@@ -537,16 +567,16 @@
 
 	// set colours for cache links
 	function setCacheLinkColors() {
-		var prevNormal = $( '#googleCacheCacheLinkColors' + ID )[ 0 ],
-			prevHover = $( '#googleCacheCacheLinkHoverColors' + ID )[ 0 ],
-			curNormal = getStyleElement( 'a.googleCache' + ID, {
+		var prevNormal = $( '#' + id.cacheLinkColors )[ 0 ],
+			prevHover = $( '#' + id.cacheLinkHoverColors )[ 0 ],
+			curNormal = getStyleElement( 'a.' + id.cacheLink, {
 				'background': options.cacheLinkBackgroundColor + ' !important',
 				'color': options.cacheLinkTextColor + ' !important'
-			}, 'googleCacheCacheLinkColors' + ID ),
-			curHover = getStyleElement( 'a.googleCache' + ID + ':hover', {
+			}, id.cacheLinkColors ),
+			curHover = getStyleElement( 'a.' + id.cacheLink + ':hover', {
 				'background': options.cacheLinkTextColor + ' !important',
 				'color': options.cacheLinkBackgroundColor + ' !important'
-			}, 'googleCacheCacheLinkHoverColors' + ID );
+			}, id.cacheLinkHoverColors );
 
 		if ( prevNormal ) {
 			head.replaceChild( curNormal, prevNormal );
@@ -574,7 +604,7 @@
 
 	// updated link text for cache links
 	function updateCacheLinkText( list, text ) {
-		$( '#googleCacheExampleCacheLink' + ID )[ 0 ].innerHTML = text;
+		$( '#' + id.exampleCacheLink )[ 0 ].innerHTML = text;
 		$.each( list, function() { this.cacheLink.innerHTML = text; } );
 	}
 
@@ -596,12 +626,12 @@
 		// OMG this is ugly
 		container.appendChild( $( [
 			'<div ', getInlineStyle( css.explanation ), '>',
-				'<span id="googleCacheMessage', ID, '"></span>&nbsp;&nbsp;',
-				'<a href="" id="googleCacheOptionsLink', ID, '" ', getInlineStyle( css.options.link ), '></a>',
+				'<span id="', id.message, '"></span>&nbsp;&nbsp;',
+				'<a href="" id="', id.optionsLink, '" ', getInlineStyle( css.options.link ), '></a>',
 
-				'<div id="googleCacheOptions', ID, '" ', getInlineStyle( css.options.panel ), '>',
-					'<input type="checkbox" id="googleCacheRedirectPageLinks', ID, '" ', getInlineStyle( css.options.input.checkbox ), ' />',
-					'<label for="googleCacheRedirectPageLinks', ID, '" ', getInlineStyle( css.options.label ), '>',
+				'<div id="', id.options, '" ', getInlineStyle( css.options.panel ), '>',
+					'<input type="checkbox" id="', id.redirectPageLinks, '" ', getInlineStyle( css.options.input.checkbox ), ' />',
+					'<label for="', id.redirectPageLinks, '" ', getInlineStyle( css.options.label ), '>',
 						strings.redirectPageLinksLabel,
 					'</label>',
 
@@ -614,32 +644,32 @@
 							'</tr>',
 							'<tr>',
 								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<label for="googleCacheCacheLinkText', ID, '" ', getInlineStyle( css.options.label ), '>',
+									'<label for="', id.cacheLinkText, '" ', getInlineStyle( css.options.label ), '>',
 										strings.cacheLinkTextLabel,
 									'</label>',
 								'</td>',
 								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<input type="text" id="googleCacheCacheLinkText', ID, '" value="', options.cacheLinkText, '" ', getInlineStyle( css.options.input.text ) + ' />',
+									'<input type="text" id="', id.cacheLinkText, '" value="', options.cacheLinkText, '" ', getInlineStyle( css.options.input.text ) + ' />',
 								'</td>',
 							'</tr>',
 							'<tr>',
 								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<label for="googleCacheCacheLinkBackgroundColor', ID, '" ', getInlineStyle( css.options.label ) + '>',
+									'<label for="', id.cacheLinkBackgroundColor, '" ', getInlineStyle( css.options.label ) + '>',
 										strings.cacheLinkBackgroundColorLabel,
 									'</label>',
 								'</td>',
 								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<input type="text" id="googleCacheCacheLinkBackgroundColor', ID, '" value="', options.cacheLinkBackgroundColor, '" ', getInlineStyle( css.options.input.text ) + ' />',
+									'<input type="text" id="', id.cacheLinkBackgroundColor, '" value="', options.cacheLinkBackgroundColor, '" ', getInlineStyle( css.options.input.text ) + ' />',
 								'</td>',
 							'</tr>',
 							'<tr>',
 								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<label for="googleCacheCacheLinkTextColor', ID, '" ', getInlineStyle( css.options.label ) + '>',
+									'<label for="', id.cacheLinkTextColor, '" ', getInlineStyle( css.options.label ) + '>',
 										strings.cacheLinkTextColorLabel,
 									'</label>',
 								'</td>',
 								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<input type="text" id="googleCacheCacheLinkTextColor', ID, '" value="', options.cacheLinkTextColor, '" ', getInlineStyle( css.options.input.text ) + ' />',
+									'<input type="text" id="', id.cacheLinkTextColor, '" value="', options.cacheLinkTextColor, '" ', getInlineStyle( css.options.input.text ) + ' />',
 								'</td>',
 							'</tr>',
 						'</table>',
@@ -650,11 +680,11 @@
 			'</div>'
 		].join( '' ) ) );
 
-		link = $( '#googleCacheOptionsLink' + ID )[ 0 ];
+		link = $( '#' + id.optionsLink )[ 0 ];
 		link.addEventListener( 'click', optionsLinkClick, false );
 		optionsLinkClick.call( link );
 
-		input = $( '#googleCacheRedirectPageLinks' + ID )[ 0 ];
+		input = $( '#' + id.redirectPageLinks )[ 0 ];
 		input.checked = options.redirectPageLinks;
 		input.addEventListener( 'click', redirectPageLinksClick, false );
 		redirectPageLinksClick.call( input );
@@ -662,21 +692,21 @@
 		setCacheLinkColors();
 
 		if ( canSaveOptions() ) {
-			$( '#googleCacheCacheLinkText' + ID )[ 0 ].addEventListener( 'change', cacheLinkTextChange, false );
-			$( '#googleCacheCacheLinkBackgroundColor' + ID )[ 0 ].addEventListener( 'change', cacheLinkBackgroundColorChange, false );
-			$( '#googleCacheCacheLinkTextColor' + ID )[ 0 ].addEventListener( 'change', cacheLinkTextColorChange, false );
+			$( '#' + id.cacheLinkText )[ 0 ].addEventListener( 'change', cacheLinkTextChange, false );
+			$( '#' + id.cacheLinkBackgroundColor )[ 0 ].addEventListener( 'change', cacheLinkBackgroundColorChange, false );
+			$( '#' + id.cacheLinkTextColor )[ 0 ].addEventListener( 'change', cacheLinkTextColorChange, false );
 		}
 
 		window.addEventListener( 'unload', function() {
 			window.removeEventListener( 'unload', arguments.callee, false );
 
-			$( '#googleCacheOptionsLink' + ID )[ 0 ].removeEventListener( 'click', optionsLinkClick, false );
-			$( '#googleCacheRedirectPageLinks' + ID )[ 0 ].removeEventListener( 'click', redirectPageLinksClick, false );
+			$( '#' + id.optionsLink )[ 0 ].removeEventListener( 'click', optionsLinkClick, false );
+			$( '#' + id.redirectPageLinks )[ 0 ].removeEventListener( 'click', redirectPageLinksClick, false );
 
 			if ( canSaveOptions() ) {
-				$( '#googleCacheCacheLinkText' + ID )[ 0 ].removeEventListener( 'change', cacheLinkTextChange, false );
-				$( '#googleCacheCacheLinkBackgroundColor' + ID )[ 0 ].removeEventListener( 'change', cacheLinkBackgroundColorChange, false );
-				$( '#googleCacheCacheLinkTextColor' + ID )[ 0 ].removeEventListener( 'change', cacheLinkTextColorChange, false );
+				$( '#' + id.cacheLinkText )[ 0 ].removeEventListener( 'change', cacheLinkTextChange, false );
+				$( '#' + id.cacheLinkBackgroundColor )[ 0 ].removeEventListener( 'change', cacheLinkBackgroundColorChange, false );
+				$( '#' + id.cacheLinkTextColor )[ 0 ].removeEventListener( 'change', cacheLinkTextColorChange, false );
 			}
 		}, false);
 	}
@@ -689,7 +719,7 @@
 
 	// show / hide options panel
 	function optionsLinkClick( e ) {
-		var panel = $( '#googleCacheOptions' + ID )[ 0 ];
+		var panel = $( '#' + id.options )[ 0 ];
 
 		if ( e ) {
 			e.preventDefault();
@@ -713,9 +743,9 @@
 		updateLinkHrefs( links, !redirect );
 		setCacheLinkVisibility( !redirect );
 
-		$( '#googleCacheMessage' + ID )[ 0 ].innerHTML = redirect ?
+		$( '#' + id.message )[ 0 ].innerHTML = redirect ?
 			strings.redirectLinkExplanation :
-			strings.cacheLinkExplanation.replace( /%s/g, '<a href="" id="googleCacheExampleCacheLink' + ID + '" class="googleCache' + ID + '" ' + getInlineStyle( css.cacheLink ) + '>' + options.cacheLinkText + '</a>' );
+			strings.cacheLinkExplanation.replace( /%s/g, '<a href="" id="' + id.exampleCacheLink + '" class="' + id.cacheLink + '" ' + getInlineStyle( css.cacheLink ) + '>' + options.cacheLinkText + '</a>' );
 	}
 
 	function cacheLinkTextChange() {
