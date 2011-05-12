@@ -41,6 +41,8 @@
 
 // v0.5 (?)
 // - Works with cache pages under HTTPS / SSL
+// - Options can be saved in Chrome, if the cache page comes from webcache.googleusercontent.com
+//   Also, options cannot be shared across HTTP and HTTPS cache pages
 // - Cache link text change takes effect immediately, instead of after page reload
 // - Another refactoring
 
@@ -121,7 +123,14 @@
 		cacheLinkTextColorLabel: 'Text colour:',
 
 		// instruction text for text options
-		textOptionInstructions: 'Leave a field blank to reset to default'
+		textOptionInstructions: 'Leave a field blank to reset to default',
+
+		// if the cache page host matches this, then we can save options in Chrome
+		// http and https pages will have separate options though :-(
+		cacheHost: 'webcache.googleusercontent.com',
+
+		// prefix for values stored in localStorage
+		localStoragePrefix: 'greasemonkey.scriptvals.http://www.thingsthemselves.com/greasemonkey//Google Cache Continue Redux.'
 	},
 
 	// modify these to change the appearance of things
@@ -397,23 +406,60 @@
 
 	// returns true if the browser supports GM_getValue / GM_setValue
 	function canSaveOptions() {
-		var me = arguments.callee,
-			token = getToken(),
-			name = 'testOption',
-			value;
+		var me = arguments.callee, result;
 
-		if ( me.cached === undefined ) {
-			if ( typeof GM_getValue !== 'undefined' && typeof GM_setValue !== 'undefined' ) {
-				try {
-					GM_setValue( name, token );
-					value = GM_getValue( name );
-					GM_setValue( name, '' );
-				} catch (e) {
-					value = null;
-				}
+		function test() {
+			var name = 'testOption', token = getToken(), value;
+
+			try {
+				GM_setValue( name, token );
+				value = GM_getValue( name );
+				GM_setValue( name, '' );
+			} catch (e) {
+				value = null;
 			}
 
-			me.cached = value === token;
+			return value === token;
+		}
+
+		if ( me.cached === undefined ) {
+			result = test();
+
+			// use localStorage to save options if host matches cacheHost
+			// based on by http://userscripts.org/topics/41177#posts-197125
+			if ( !result && window.location.host === strings.cacheHost && window.localStorage &&
+					typeof window.localStorage.getItem === 'function' && typeof window.localStorage.setItem === 'function' ) {
+
+				GM_getValue = function( name, defaultValue ) {
+					var value = window.localStorage.getItem( strings.localStoragePrefix + name ), type;
+
+					if ( value ) {
+						type = value.charAt( 0 );
+						value = value.substring( 1 );
+
+						switch ( type ) {
+						case 'b':
+							value = value === 'true';
+							break;
+						case 'n':
+							value = Number( value );
+							break;
+						}
+					} else {
+						value = defaultValue;
+					}
+
+					return value;
+				};
+
+				GM_setValue = function( name, value ) {
+					window.localStorage.setItem( strings.localStoragePrefix + name, ( typeof value ).charAt( 0 ) + value );
+				};
+
+				result = test();
+			}
+
+			me.cached = result;
 		}
 
 		return me.cached;
@@ -452,7 +498,7 @@
 	function findSearchQuery() {
 		var query = '';
 
-		$.each( document.location.search.replace( /^\?/, '' ).split( '&' ), function( i, pair ) {
+		$.each( window.location.search.replace( /^\?/, '' ).split( '&' ), function( i, pair ) {
 			if ( pair.indexOf( 'q=' ) === 0 ) {
 				query = pair.substring( 2 );
 				return false;
@@ -499,7 +545,7 @@
 		                               XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
 		                               null ),
 			list = [],
-			tmplHref = document.location.href.replace(document.location.hash, ''),
+			tmplHref = window.location.href.replace(window.location.hash, ''),
 			changeVersion, link, href, hash, cacheHref, cacheLink, i;
 
 		for ( i = 0; ( link = links.snapshotItem( i ) ); i++ ) {
