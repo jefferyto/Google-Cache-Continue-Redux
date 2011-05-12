@@ -4,7 +4,7 @@
 
 // Copyright (C) 2005-2011 by
 //   Jonathon Ramsey (jonathon.ramsey@gmail.com)
-//   Jeffery To (jeffery.to @gmail.com)
+//   Jeffery To (jeffery.to@gmail.com)
 
 // This file is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published
@@ -102,11 +102,11 @@
 		// explanation text for redirected page links
 		redirectLinkExplanation: 'All HTTP/HTTPS links will be redirected to the Google cache.',
 
-		// "show options" link text
-		showOptions: 'show options',
+		// "Show options" link text
+		showOptions: 'Show options',
 
-		// "hide options" link text
-		hideOptions: 'hide options',
+		// "Hide options" link text
+		hideOptions: 'Hide options',
 
 		// redirect page links option label
 		redirectPageLinksLabel: 'Redirect links to the Google cache',
@@ -131,7 +131,38 @@
 		cacheHost: 'webcache.googleusercontent.com',
 
 		// prefix for values stored in localStorage
-		localStoragePrefix: 'greasemonkey.scriptvals.http://www.thingsthemselves.com/greasemonkey//Google Cache Continue Redux.'
+		localStoragePrefix: 'greasemonkey.scriptvals.http://www.thingsthemselves.com/greasemonkey//Google Cache Continue Redux.',
+
+		// "About" link text
+		about: 'About',
+
+		// about title text
+		aboutTitle: 'Google Cache Continue Redux',
+
+		// about homepage link text
+		aboutHomepage: 'Homepage',
+
+		// about homepage url
+		aboutHomepageUrl: 'http://userscripts.org/scripts/show/30878',
+
+		// about version text
+		// %s will be replaced by the version number
+		aboutVersion: 'Version %s',
+
+		// about text
+		aboutText: 'Based on Google Cache Continue by Jonathon Ramsey<br>Copyright 2005-2011 by Jonathon Ramsey and Jeffery To',
+
+		// "Close" link text
+		close: 'Close',
+
+		// checking text
+		checking: 'Checking for update&hellip;',
+
+		// install newer version link text
+		update: 'Install latest version',
+
+		// script url
+		scriptUrl: 'http://userscripts.org/scripts/source/30878.user.js'
 	},
 
 	// modify these to change the appearance of things
@@ -209,14 +240,14 @@
 			'cursor': 'auto'
 		},
 
+		panel: {
+			'margin-top': '0.5em'
+		},
+
+		link: {
+		},
+
 		options: {
-			panel: {
-				'margin-top': '0.5em'
-			},
-
-			link: {
-			},
-
 			input: {
 				checkbox: {
 					'vertical-align': 'middle'
@@ -240,6 +271,15 @@
 
 			td: {
 				'padding-right': '5px'
+			}
+		},
+
+		about: {
+			text: {
+			},
+
+			title: {
+				'font-weight': 'bold'
 			}
 		}
 	};
@@ -333,9 +373,6 @@
 		// (encoded) cache term ("cache%3Ahttp%3A%2F%2Fwww.example.com")
 		cacheTerm = findCacheTerm( searchQuery ),
 
-		// script options
-		options = restoreOptions(),
-
 		// element ids
 		id = {
 			cacheLink: 'Link', // this is actually used as a classname
@@ -349,8 +386,18 @@
 			redirectPageLinks: 'RedirectPageLinks',
 			cacheLinkText: 'CacheLinkText',
 			cacheLinkBackgroundColor: 'CacheLinkBackgroundColor',
-			cacheLinkTextColor: 'CacheLinkTextColor'
+			cacheLinkTextColor: 'CacheLinkTextColor',
+			aboutLink: 'AboutLink',
+			about: 'About',
+			closeLink: 'CloseLink',
+			versionCheck: 'VersionCheck'
 		},
+
+		// script version
+		version = '0.5',
+
+		// script options
+		options,
 
 		// link details
 		links;
@@ -360,7 +407,14 @@
 		return;
 	}
 
-	// save options
+	// these aren't actual options but things we need to remember
+	$.extend( defaultOptions, {
+		lastUpdateCheck: '0', // GM_setValue can only store 32-bit integers, so we need to save this as a string
+		updateAvailable: false
+	} );
+
+	// restore, then save, options
+	options = restoreOptions(),
 	saveOptions( options );
 
 	// make element ids unique
@@ -368,9 +422,12 @@
 
 	if ( isCachePage( searchQuery ) ) {
 		links = scanLinks( cacheTerm );
+
 		if ( links.changeVersion ) {
-			addExplanation( links.changeVersion.parentNode.parentNode );
+			addExplanation( options, links.changeVersion.parentNode.parentNode );
+			checkForUpdate( options );
 		}
+
 	} else {
 		// if Google hasn't cached the original page, add a link for the original URL
 		addOriginalLink( decodeURIComponent( cacheTerm ).replace( /^cache:/, '' ) );
@@ -417,7 +474,7 @@
 					GM_setValue( name, token );
 					value = GM_getValue( name );
 					GM_setValue( name, '' );
-				} catch (e) {
+				} catch ( e ) {
 					value = null;
 				}
 
@@ -468,9 +525,9 @@
 
 	// returns an options object based on any saved options and the default options
 	function restoreOptions() {
-		var options = $.extend( {}, defaultOptions );
+		var options = $.extend( {}, defaultOptions ), canSave = canSaveOptions();
 
-		if ( canSaveOptions() ) {
+		if ( canSave ) {
 			$.each( defaultOptions, function( name ) {
 				var saved = GM_getValue( name );
 				if ( saved !== undefined ) {
@@ -478,6 +535,9 @@
 				}
 			} );
 		}
+
+		// don't check for updates if we can't remember when we last checked
+		options.doUpdateCheck = canSave;
 
 		return options;
 	}
@@ -675,16 +735,39 @@
 	}
 
 	// adds our explanation text and option panel to the cache page header
-	function addExplanation( container ) {
-		var link, input;
+	function addExplanation( options, container ) {
+		var space = '&nbsp;&nbsp;&nbsp;', link, input;
 
 		// OMG this is ugly
 		container.appendChild( $( [
 			'<div ', getInlineStyle( css.explanation ), '>',
-				'<span id="', id.message, '"></span>&nbsp;&nbsp;',
-				'<a href="" id="', id.optionsLink, '" ', getInlineStyle( css.options.link ), '></a>',
+				'<span id="', id.message, '"></span>',
+				space,
+				'<a href="" id="', id.optionsLink, '" ', getInlineStyle( css.link ), '></a>',
+				space,
+				'<a href="" id="', id.aboutLink, '" ', getInlineStyle( css.link ), '>', strings.about, '</a>',
+				space,
+				'<span id="', id.versionCheck, '"></span>',
 
-				'<div id="', id.options, '" ', getInlineStyle( css.options.panel ), '>',
+				'<div id="', id.about, '" ', getInlineStyle( css.panel ), '>',
+					'<p ', getInlineStyle( css.about.text ), '>',
+						'<span ', getInlineStyle( css.about.title ), '>',
+							strings.aboutTitle,
+						'</span>',
+						space,
+						strings.aboutVersion.replace(/%s/g, version ),
+						space,
+						'<a href="', strings.aboutHomepageUrl, '" target="_blank" ', getInlineStyle( css.link ), '>',
+							strings.aboutHomepage,
+						'</a>',
+					'</p>',
+					'<p ', getInlineStyle( css.about.text ), '>',
+						strings.aboutText,
+					'</p>',
+					'<a href="" id="', id.closeLink, '" ', getInlineStyle( css.link ), '>', strings.close, '</a>',
+				'</div>',
+
+				'<div id="', id.options, '" ', getInlineStyle( css.panel ), '>',
 					'<input type="checkbox" id="', id.redirectPageLinks, '" ', getInlineStyle( css.options.input.checkbox ), ' />',
 					'<label for="', id.redirectPageLinks, '" ', getInlineStyle( css.options.label ), '>',
 						strings.redirectPageLinksLabel,
@@ -735,10 +818,12 @@
 			'</div>'
 		].join( '' ) ) );
 
+		// options link
 		link = $( '#' + id.optionsLink )[ 0 ];
 		link.addEventListener( 'click', optionsLinkClick, false );
 		optionsLinkClick.call( link );
 
+		// redirect page links checkbox
 		input = $( '#' + id.redirectPageLinks )[ 0 ];
 		input.checked = options.redirectPageLinks;
 		input.addEventListener( 'click', redirectPageLinksClick, false );
@@ -746,11 +831,21 @@
 
 		setCacheLinkColors();
 
+		// other options
 		if ( canSaveOptions() ) {
 			$( '#' + id.cacheLinkText )[ 0 ].addEventListener( 'change', cacheLinkTextChange, false );
 			$( '#' + id.cacheLinkBackgroundColor )[ 0 ].addEventListener( 'change', cacheLinkBackgroundColorChange, false );
 			$( '#' + id.cacheLinkTextColor )[ 0 ].addEventListener( 'change', cacheLinkTextColorChange, false );
 		}
+
+		// about and close links
+		link = $( '#' + id.aboutLink )[ 0 ];
+		link.addEventListener( 'click', aboutLinkClick, false );
+		link = $( '#' + id.closeLink )[ 0 ];
+		link.addEventListener( 'click', aboutLinkClick, false );
+		aboutLinkClick.call( link );
+
+		reflectUpdateStatus( options );
 
 		window.addEventListener( 'unload', function() {
 			window.removeEventListener( 'unload', arguments.callee, false );
@@ -763,7 +858,59 @@
 				$( '#' + id.cacheLinkBackgroundColor )[ 0 ].removeEventListener( 'change', cacheLinkBackgroundColorChange, false );
 				$( '#' + id.cacheLinkTextColor )[ 0 ].removeEventListener( 'change', cacheLinkTextColorChange, false );
 			}
+
+			$( '#' + id.aboutLink )[ 0 ].removeEventListener( 'click', aboutLinkClick, false );
+			$( '#' + id.closeLink )[ 0 ].removeEventListener( 'click', aboutLinkClick, false );
 		}, false);
+	}
+
+
+
+	/*
+	 * check for update
+	 */
+
+	function checkForUpdate( options ) {
+		var now = ( new Date() ).getTime();
+
+		if ( typeof GM_xmlhttpRequest === 'function' && options.doUpdateCheck &&
+				now - parseInt( options.lastUpdateCheck, 10 ) >= 28 * 24 * 60 * 60 * 1000 ) { // 4 weeks
+
+			options.lastUpdateCheck = now + '';
+			saveOptions( options );
+
+			showChecking();
+
+			try {
+				GM_xmlhttpRequest( {
+					method: 'GET',
+					url: strings.scriptUrl,
+
+					onload: function( data ) {
+						var a = /\/\/[ \t]*@version[ \t]+([^\s]+)/.exec( data.responseText || '' );
+
+						options.updateAvailable = !!( a && a[ 1 ] > version );
+						saveOptions( options );
+
+						reflectUpdateStatus( options );
+					},
+
+					onerror: function() { reflectUpdateStatus( options ); }
+				} );
+
+			} catch ( e ) {
+				reflectUpdateStatus( options );
+			}
+		}
+	}
+
+	function showChecking() {
+		$( '#' + id.versionCheck )[ 0 ].innerHTML = strings.checking;
+	}
+
+	function reflectUpdateStatus( options ) {
+		$( '#' + id.versionCheck )[ 0 ].innerHTML = options.updateAvailable ?
+			'<a href="' + strings.scriptUrl + '" ' + getInlineStyle( css.link ) + '>' + strings.update + '</a>' : '';
 	}
 
 
@@ -837,6 +984,17 @@
 		saveOptions( options );
 
 		setCacheLinkColors();
+	}
+
+	// show / hide about panel
+	function aboutLinkClick( e ) {
+		var panel = $( '#' + id.about )[ 0 ];
+
+		if ( e ) {
+			e.preventDefault();
+		}
+
+		panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
 	}
 
 })( window, document, document.getElementsByTagName('head')[0] );
