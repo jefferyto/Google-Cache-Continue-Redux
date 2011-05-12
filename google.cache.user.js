@@ -399,7 +399,7 @@
 	function canSaveOptions() {
 		var me = arguments.callee,
 			token = getToken(),
-			name = 'testOption' + token,
+			name = 'testOption',
 			value;
 
 		if ( me.cached === undefined ) {
