@@ -27,6 +27,7 @@
 
 // ==UserScript==
 // @name           Google Cache Continue Redux
+// @version        0.5
 // @namespace      http://www.thingsthemselves.com/greasemonkey/
 // @description    Add links to Google cache results to allow continuing using the cache, keeping search terms highlighted
 // @include        http://*/search?*q=cache:*
