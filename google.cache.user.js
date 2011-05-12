@@ -45,6 +45,8 @@
 // - Options can be saved in Chrome, if the cache page comes from webcache.googleusercontent.com
 //   Also, options cannot be shared across HTTP and HTTPS cache pages
 // - Cache link text change takes effect immediately, instead of after page reload
+// - Added an About panel
+// - Added an automatic script update check, happens every 4 weeks
 // - Another refactoring
 
 // v0.4 (2010-02-10)
