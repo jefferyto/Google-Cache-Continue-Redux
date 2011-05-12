@@ -407,23 +407,23 @@
 
 	// returns true if the browser supports GM_getValue / GM_setValue
 	function canSaveOptions() {
-		var me = arguments.callee, result;
-
-		function test() {
-			var name = 'testOption', token = getToken(), value;
-
-			try {
-				GM_setValue( name, token );
-				value = GM_getValue( name );
-				GM_setValue( name, '' );
-			} catch (e) {
-				value = null;
-			}
-
-			return value === token;
-		}
+		var me = arguments.callee, test, result;
 
 		if ( me.cached === undefined ) {
+			test = function() {
+				var name = 'testOption', token = getToken(), value;
+
+				try {
+					GM_setValue( name, token );
+					value = GM_getValue( name );
+					GM_setValue( name, '' );
+				} catch (e) {
+					value = null;
+				}
+
+				return value === token;
+			};
+
 			result = test();
 
 			// use localStorage to save options if host matches cacheHost
