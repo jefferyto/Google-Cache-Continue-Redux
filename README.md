@@ -13,7 +13,8 @@ See [userscripts.org](http://userscripts.org/scripts/show/30878) for more detail
   Also, options cannot be shared across HTTP and HTTPS cache pages
 - Cache link text change takes effect immediately, instead of after page reload
 - Added an About panel
-- Added an automatic script update check, happens every 4 weeks
+- Added a "Check for updates" function, inside the About panel
+- Auto-check for updates every 4 weeks
 - Another refactoring
 
 ### v0.4 (2010-02-10) ###

@@ -46,7 +46,8 @@
 //   Also, options cannot be shared across HTTP and HTTPS cache pages
 // - Cache link text change takes effect immediately, instead of after page reload
 // - Added an About panel
-// - Added an automatic script update check, happens every 4 weeks
+// - Added a "Check for updates" function, inside the About panel
+// - Auto-check for updates every 4 weeks
 // - Another refactoring
 
 // v0.4 (2010-02-10)
@@ -141,24 +142,27 @@
 		// about title text
 		aboutTitle: 'Google Cache Continue Redux',
 
-		// about homepage link text
-		aboutHomepage: 'Homepage',
-
-		// about homepage url
-		aboutHomepageUrl: 'http://userscripts.org/scripts/show/30878',
+		// about text
+		aboutText: 'Based on Google Cache Continue by Jonathon Ramsey<br>Copyright 2005-2011 by Jonathon Ramsey and Jeffery To',
 
 		// about version text
 		// %s will be replaced by the version number
-		aboutVersion: 'Version %s',
+		version: 'Version %s',
 
-		// about text
-		aboutText: 'Based on Google Cache Continue by Jonathon Ramsey<br>Copyright 2005-2011 by Jonathon Ramsey and Jeffery To',
+		// about homepage link text
+		homepage: 'Homepage',
+
+		// about homepage url
+		homepageUrl: 'http://userscripts.org/scripts/show/30878',
 
 		// "Close" link text
 		close: 'Close',
 
+		// check for update link text
+		check: 'Check for updates',
+
 		// checking text
-		checking: 'Checking for update&hellip;',
+		checking: 'Checking for updates&hellip;',
 
 		// install newer version link text
 		update: 'Install latest version',
@@ -376,27 +380,13 @@
 		cacheTerm = findCacheTerm( searchQuery ),
 
 		// element ids
-		id = {
-			cacheLink: 'Link', // this is actually used as a classname
-			hideCacheLinks: 'HideCacheLinks',
-			cacheLinkColors: 'CacheLinkColors',
-			cacheLinkHoverColors: 'CacheLinkHoverColors',
-			exampleCacheLink: 'ExampleCacheLink',
-			message: 'Message',
-			optionsLink: 'OptionsLink',
-			options: 'Options',
-			redirectPageLinks: 'RedirectPageLinks',
-			cacheLinkText: 'CacheLinkText',
-			cacheLinkBackgroundColor: 'CacheLinkBackgroundColor',
-			cacheLinkTextColor: 'CacheLinkTextColor',
-			aboutLink: 'AboutLink',
-			about: 'About',
-			closeLink: 'CloseLink',
-			versionCheck: 'VersionCheck'
-		},
+		id = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor aboutLink about closeLink checkLink checkResults'.split( ' ' ) ),
 
 		// script version
 		version = '0.5',
+
+		// true if we're in currently checking
+		checking = false,
 
 		// script options
 		options,
@@ -419,15 +409,15 @@
 	options = restoreOptions(),
 	saveOptions( options );
 
-	// make element ids unique
-	uniqueifyIds( id );
-
 	if ( isCachePage( searchQuery ) ) {
 		links = scanLinks( cacheTerm );
 
 		if ( links.changeVersion ) {
 			addExplanation( options, links.changeVersion.parentNode.parentNode );
-			checkForUpdate( options );
+
+			if ( options.canCheckForUpdate && shouldCheckForUpdate( options ) ) {
+				checkForUpdate( options );
+			}
 		}
 
 	} else {
@@ -446,17 +436,6 @@
 	/*
 	 * functions!
 	 */
-
-
-
-	// returns a unique token string
-	function getToken() { return ( Math.random() + '' ).replace( /\D/g, '' ); }
-
-	// prepends 'googleCache' and appends a unique token to each id
-	function uniqueifyIds( id ) {
-		var token = getToken();
-		$.each( id, function( prop, val ) { id[ prop ] = 'googleCache' + val + token; } );
-	}
 
 
 
@@ -539,7 +518,7 @@
 		}
 
 		// don't check for updates if we can't remember when we last checked
-		options.doUpdateCheck = canSave;
+		options.canCheckForUpdate = typeof GM_xmlhttpRequest === 'function' && canSave;
 
 		return options;
 	}
@@ -747,20 +726,26 @@
 				space,
 				'<a href="" id="', id.optionsLink, '" ', getInlineStyle( css.link ), '></a>',
 				space,
-				'<a href="" id="', id.aboutLink, '" ', getInlineStyle( css.link ), '>', strings.about, '</a>',
+				'<a href="" id="', id.aboutLink, '" ', getInlineStyle( css.link ), '>',
+					strings.about,
+				'</a>',
 				space,
-				'<span id="', id.versionCheck, '"></span>',
+				'<span id="', id.checkResults, '"></span>',
 
 				'<div id="', id.about, '" ', getInlineStyle( css.panel ), '>',
 					'<p ', getInlineStyle( css.about.text ), '>',
 						'<span ', getInlineStyle( css.about.title ), '>',
 							strings.aboutTitle,
 						'</span>',
+						'<br>',
+						strings.version.replace(/%s/g, version ),
+						'<br>',
+						'<a href="', strings.homepageUrl, '" target="_blank" ', getInlineStyle( css.link ), '>',
+							strings.homepage,
+						'</a>',
 						space,
-						strings.aboutVersion.replace(/%s/g, version ),
-						space,
-						'<a href="', strings.aboutHomepageUrl, '" target="_blank" ', getInlineStyle( css.link ), '>',
-							strings.aboutHomepage,
+						'<a href="" id="', id.checkLink, '" ', getInlineStyle( css.link ), '>',
+							strings.check,
 						'</a>',
 					'</p>',
 					'<p ', getInlineStyle( css.about.text ), '>',
@@ -847,6 +832,9 @@
 		link.addEventListener( 'click', aboutLinkClick, false );
 		aboutLinkClick.call( link );
 
+		// check link
+		$( '#' + id.checkLink )[ 0 ].addEventListener( 'click', checkLinkClick, false );
+
 		reflectUpdateStatus( options );
 
 		window.addEventListener( 'unload', function() {
@@ -863,6 +851,7 @@
 
 			$( '#' + id.aboutLink )[ 0 ].removeEventListener( 'click', aboutLinkClick, false );
 			$( '#' + id.closeLink )[ 0 ].removeEventListener( 'click', aboutLinkClick, false );
+			$( '#' + id.checkLink )[ 0 ].removeEventListener( 'click', checkLinkClick, false );
 		}, false);
 	}
 
@@ -872,47 +861,54 @@
 	 * check for update
 	 */
 
+	// check every 4 weeks
+	function shouldCheckForUpdate( options ) { return now() - parseInt( options.lastUpdateCheck, 10 ) >= 28 * 24 * 60 * 60 * 1000; }
+
 	function checkForUpdate( options ) {
-		var now = ( new Date() ).getTime();
+		options.lastUpdateCheck = now() + '';
+		saveOptions( options );
 
-		if ( typeof GM_xmlhttpRequest === 'function' && options.doUpdateCheck &&
-				now - parseInt( options.lastUpdateCheck, 10 ) >= 28 * 24 * 60 * 60 * 1000 ) { // 4 weeks
+		checking = true;
+		showChecking();
 
-			options.lastUpdateCheck = now + '';
-			saveOptions( options );
+		function after() {
+			checking = false;
+			reflectUpdateStatus( options );
+		}
 
-			showChecking();
+		try {
+			GM_xmlhttpRequest( {
+				method: 'GET',
+				url: strings.scriptUrl + '?_=' + now(),
 
-			try {
-				GM_xmlhttpRequest( {
-					method: 'GET',
-					url: strings.scriptUrl,
+				onload: function( data ) {
+					var a = /\/\/[ \t]*@version[ \t]+([^\s]+)/.exec( data.responseText || '' );
 
-					onload: function( data ) {
-						var a = /\/\/[ \t]*@version[ \t]+([^\s]+)/.exec( data.responseText || '' );
-
+					if ( data.status === 200 ) {
 						options.updateAvailable = !!( a && a[ 1 ] > version );
 						saveOptions( options );
+					}
 
-						reflectUpdateStatus( options );
-					},
+					after();
+				},
 
-					onerror: function() { reflectUpdateStatus( options ); }
-				} );
+				onerror: after
+			} );
 
-			} catch ( e ) {
-				reflectUpdateStatus( options );
-			}
+		} catch ( e ) {
+			after();
 		}
 	}
 
 	function showChecking() {
-		$( '#' + id.versionCheck )[ 0 ].innerHTML = strings.checking;
+		$( '#' + id.checkResults )[ 0 ].innerHTML = strings.checking;
+		$( '#' + id.checkLink )[ 0 ].style.display = 'none';
 	}
 
 	function reflectUpdateStatus( options ) {
-		$( '#' + id.versionCheck )[ 0 ].innerHTML = options.updateAvailable ?
-			'<a href="' + strings.scriptUrl + '" ' + getInlineStyle( css.link ) + '>' + strings.update + '</a>' : '';
+		$( '#' + id.checkResults )[ 0 ].innerHTML = options.updateAvailable ?
+			'<a href="' + strings.homepageUrl + '" ' + getInlineStyle( css.link ) + ' target="_blank">' + strings.update + '</a>' : '';
+		$( '#' + id.checkLink )[ 0 ].style.display = options.canCheckForUpdate ? 'inline' : 'none';
 	}
 
 
@@ -997,6 +993,34 @@
 		}
 
 		panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+	}
+
+	// initiate check for update
+	function checkLinkClick( e ) {
+		e.preventDefault();
+
+		if ( options.canCheckForUpdate && !checking ) {
+			checkForUpdate( options );
+		}
+	}
+
+
+
+	/*
+	 * misc
+	 */
+
+	// returns the current epoch time
+	function now() { return ( new Date() ).getTime(); }
+
+	// returns a unique token string
+	function getToken() { return ( Math.random() + '' ).replace( /\D/g, '' ); }
+
+	// prepends 'googleCache' and appends a unique token to each id
+	function generateIds( list ) {
+		var token = getToken(), ids = {};
+		$.each( list, function( i, name ) { ids[ name ] = 'googleCache' + name.charAt( 0 ).toUpperCase() + name.substring( 1 ) + token; } );
+		return ids;
 	}
 
 })( window, document, document.getElementsByTagName('head')[0] );
