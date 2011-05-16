@@ -9,6 +9,7 @@ See [userscripts.org](http://userscripts.org/scripts/show/30878) for more detail
 ### v0.5 (?) ###
 
 - Works with cache pages under HTTPS / SSL
+- Added an option to always use HTTPS
 - Options can be saved in Chrome, if the cache page comes from webcache.googleusercontent.com
   Also, options cannot be shared across HTTP and HTTPS cache pages
 - Cache link text change takes effect immediately, instead of after page reload

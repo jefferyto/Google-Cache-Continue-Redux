@@ -42,6 +42,7 @@
 
 // v0.5 (?)
 // - Works with cache pages under HTTPS / SSL
+// - Added an option to always use HTTPS
 // - Options can be saved in Chrome, if the cache page comes from webcache.googleusercontent.com
 //   Also, options cannot be shared across HTTP and HTTPS cache pages
 // - Cache link text change takes effect immediately, instead of after page reload
@@ -79,6 +80,9 @@
 		// can be changed in the options panel
 		redirectPageLinks: false,
 
+		// whether we should always use HTTPS for cache pages
+		useHttps: false,
+
 		// the rest of these can be changed in the options panel if the browser supports GM_setValue()
 
 		// link text for cache links
@@ -113,6 +117,9 @@
 
 		// redirect page links option label
 		redirectPageLinksLabel: 'Redirect links to the Google cache',
+
+		// use https option label
+		useHttpsLabel: 'Always use HTTPS',
 
 		// cache link options heading
 		cacheLinkOptions: 'Cache link',
@@ -380,7 +387,7 @@
 		cacheTerm = findCacheTerm( searchQuery ),
 
 		// element ids
-		id = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor aboutLink about closeLink checkLink checkResults'.split( ' ' ) ),
+		id = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks useHttps cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor aboutLink about closeLink checkLink checkResults'.split( ' ' ) ),
 
 		// script version
 		version = '0.5',
@@ -410,13 +417,18 @@
 	saveOptions( options );
 
 	if ( isCachePage( searchQuery ) ) {
-		links = scanLinks( cacheTerm );
+		if ( options.useHttps && window.location.protocol === 'http:' ) {
+			setTimeout( function () { window.location.replace( window.location.href.replace( /^http:/i, 'https:' ) ); }, 0 );
 
-		if ( links.changeVersion ) {
-			addExplanation( options, links.changeVersion.parentNode.parentNode );
+		} else {
+			links = scanLinks( cacheTerm );
 
-			if ( options.canCheckForUpdate && shouldCheckForUpdate( options ) ) {
-				checkForUpdate( options );
+			if ( links.changeVersion ) {
+				addExplanation( options, links.changeVersion.parentNode.parentNode );
+
+				if ( options.canCheckForUpdate && shouldCheckForUpdate( options ) ) {
+					checkForUpdate( options );
+				}
 			}
 		}
 
@@ -609,7 +621,8 @@
 						link: link,
 						cacheLink: cacheLink,
 						href: href,
-						cacheHref: cacheHref
+						cacheHref: cacheHref,
+						secureCacheHref: cacheHref.replace( /^http:/i, 'https:' )
 					} );
 
 					$.insertAfter( cacheLink, link );
@@ -693,9 +706,14 @@
 	 */
 
 	// updates hrefs for links
-	function updateLinkHrefs( list, isOriginalHref ) {
-		var prop = isOriginalHref ? 'href' : 'cacheHref';
-		$.each( list, function() { this.link.href = this[ prop ]; } );
+	function updateLinkHrefs( list, options ) {
+		var cacheLinkProp = options.useHttps ? 'secureCacheHref' : 'cacheHref',
+			linkProp = options.redirectPageLinks ? cacheLinkProp : 'href';
+
+		$.each( list, function() {
+			this.link.href = this[ linkProp ];
+			this.cacheLink.href = this[ cacheLinkProp ];
+		} );
 	}
 
 	// updated link text for cache links
@@ -759,6 +777,11 @@
 					'<label for="', id.redirectPageLinks, '" ', getInlineStyle( css.options.label ), '>',
 						strings.redirectPageLinksLabel,
 					'</label>',
+					'<br>',
+					'<input type="checkbox" id="', id.useHttps, '" ', getInlineStyle( css.options.input.checkbox ), ' />',
+					'<label for="', id.useHttps, '" ', getInlineStyle( css.options.label ), '>',
+						strings.useHttpsLabel,
+					'</label>',
 
 					canSaveOptions() ? [
 						'<table cellpadding="0" cellspacing="0" border="0" ', getInlineStyle( css.options.table ), '>',
@@ -816,6 +839,12 @@
 		input.addEventListener( 'click', redirectPageLinksClick, false );
 		redirectPageLinksClick.call( input );
 
+		// use https checkbox
+		input = $( '#' + id.useHttps )[ 0 ];
+		input.checked = options.useHttps;
+		input.addEventListener( 'click', useHttpsClick, false );
+		useHttpsClick.call( input );
+
 		setCacheLinkColors();
 
 		// other options
@@ -842,6 +871,7 @@
 
 			$( '#' + id.optionsLink )[ 0 ].removeEventListener( 'click', optionsLinkClick, false );
 			$( '#' + id.redirectPageLinks )[ 0 ].removeEventListener( 'click', redirectPageLinksClick, false );
+			$( '#' + id.useHttps )[ 0 ].removeEventListener( 'click', useHttpsClick, false );
 
 			if ( canSaveOptions() ) {
 				$( '#' + id.cacheLinkText )[ 0 ].removeEventListener( 'change', cacheLinkTextChange, false );
@@ -940,12 +970,19 @@
 		options.redirectPageLinks = redirect;
 		saveOptions( options );
 
-		updateLinkHrefs( links, !redirect );
+		updateLinkHrefs( links, options );
 		setCacheLinkVisibility( !redirect );
 
 		$( '#' + id.message )[ 0 ].innerHTML = redirect ?
 			strings.redirectLinkExplanation :
 			strings.cacheLinkExplanation.replace( /%s/g, '<a href="" id="' + id.exampleCacheLink + '" class="' + id.cacheLink + '" ' + getInlineStyle( css.cacheLink ) + '>' + options.cacheLinkText + '</a>' );
+	}
+
+	function useHttpsClick() {
+		options.useHttps = this.checked;
+		saveOptions( options );
+
+		updateLinkHrefs( links, options );
 	}
 
 	function cacheLinkTextChange() {
