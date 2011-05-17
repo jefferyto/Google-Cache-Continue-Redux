@@ -68,7 +68,7 @@
 // v0.1 (2008-07-31)
 // - Initial version
 
-(function( window, document, head, undefined ) {
+(function( window, document, head, body, undefined ) {
 
 	/*
 	 * user editable parts, start!
@@ -135,6 +135,9 @@
 
 		// instruction text for text options
 		textOptionInstructions: 'Leave a field blank to reset to default',
+
+		// synchronize http / https options link text
+		synchronizeOptions: 'Synchronize options between HTTP and HTTPS',
 
 		// if the cache page host matches this, then we can save options in Chrome
 		// http and https pages will have separate options though :-(
@@ -387,13 +390,16 @@
 		cacheTerm = findCacheTerm( searchQuery ),
 
 		// element ids
-		id = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks useHttps cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor aboutLink about closeLink checkLink checkResults'.split( ' ' ) ),
+		id = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks useHttps cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor synchronizeOptionsLink synchronizeIframe aboutLink about closeLink checkLink checkResults'.split( ' ' ) ),
 
 		// script version
 		version = '0.5',
 
 		// true if we're in currently checking
 		checking = false,
+
+		// true of we're using localStorage to save options
+		usingLocalStorage = false,
 
 		// script options
 		options,
@@ -413,12 +419,14 @@
 	} );
 
 	// restore, then save, options
-	options = restoreOptions(),
+	// restoreOptions() will set usingLocalStorage as a side effect
+	// should find a better way...
+	options = restoreOptions();
 	saveOptions( options );
 
 	if ( isCachePage( searchQuery ) ) {
 		if ( options.useHttps && window.location.protocol === 'http:' ) {
-			setTimeout( function () { window.location.replace( window.location.href.replace( /^http:/i, 'https:' ) ); }, 0 );
+			setTimeout( function() { window.location.replace( window.location.href.replace( /^http:/i, 'https:' ) ); }, 0 );
 
 		} else {
 			links = scanLinks( cacheTerm );
@@ -437,9 +445,14 @@
 		addOriginalLink( decodeURIComponent( cacheTerm ).replace( /^cache:/, '' ) );
 	}
 
+	if ( usingLocalStorage ) {
+		window.addEventListener( 'message', receivedMessage, false );
+	}
+
 	// cleanup
 	window.addEventListener( 'unload', function() {
 		window.removeEventListener( 'unload', arguments.callee, false );
+		window.removeEventListener( 'message', receivedMessage, false );
 		searchQuery = cacheTerm = options = id = links = null;
 	}, false );
 
@@ -508,6 +521,7 @@
 				};
 
 				result = test();
+				usingLocalStorage = result;
 			}
 
 			me.cached = result;
@@ -821,7 +835,13 @@
 								'</td>',
 							'</tr>',
 						'</table>',
-						strings.textOptionInstructions
+						strings.textOptionInstructions,
+						usingLocalStorage ? [
+							'<br>',
+							'<a href="" id="', id.synchronizeOptionsLink, '" ', getInlineStyle( css.link ), '>',
+								strings.synchronizeOptions,
+							'</a>'
+						].join( '' ) : '',
 					].join( '' ) : '',
 
 				'</div>',
@@ -852,6 +872,10 @@
 			$( '#' + id.cacheLinkText )[ 0 ].addEventListener( 'change', cacheLinkTextChange, false );
 			$( '#' + id.cacheLinkBackgroundColor )[ 0 ].addEventListener( 'change', cacheLinkBackgroundColorChange, false );
 			$( '#' + id.cacheLinkTextColor )[ 0 ].addEventListener( 'change', cacheLinkTextColorChange, false );
+
+			if ( usingLocalStorage ) {
+				$( '#' + id.synchronizeOptionsLink )[ 0 ].addEventListener( 'click', synchronizeOptionsLinkClick, false );
+			}
 		}
 
 		// about and close links
@@ -877,6 +901,10 @@
 				$( '#' + id.cacheLinkText )[ 0 ].removeEventListener( 'change', cacheLinkTextChange, false );
 				$( '#' + id.cacheLinkBackgroundColor )[ 0 ].removeEventListener( 'change', cacheLinkBackgroundColorChange, false );
 				$( '#' + id.cacheLinkTextColor )[ 0 ].removeEventListener( 'change', cacheLinkTextColorChange, false );
+
+				if ( usingLocalStorage ) {
+					$( '#' + id.synchronizeOptionsLink )[ 0 ].removeEventListener( 'click', synchronizeOptionsLinkClick, false );
+				}
 			}
 
 			$( '#' + id.aboutLink )[ 0 ].removeEventListener( 'click', aboutLinkClick, false );
@@ -939,6 +967,135 @@
 		$( '#' + id.checkResults )[ 0 ].innerHTML = options.updateAvailable ?
 			'<a href="' + strings.homepageUrl + '" ' + getInlineStyle( css.link ) + ' target="_blank">' + strings.update + '</a>' : '';
 		$( '#' + id.checkLink )[ 0 ].style.display = options.canCheckForUpdate ? 'inline' : 'none';
+	}
+
+
+
+	/*
+	 * synchronize options (between http and https)
+	 */
+
+	// we need to use execScript() here because Chrome won't let an extension on the parent window access the window object of an iframe
+	// (or an extension on the iframe access the parent window object)
+
+	function synchronizeOptions() {
+		var iframe = $( '<iframe id="' + id.synchronizeIframe + '" width="1" height="1" style="position:absolute;top:-99999px;visibility:hidden;"></iframe>' );
+
+		iframe.addEventListener( 'load', function() {
+			iframe.removeEventListener( 'load', arguments.callee, false );
+
+			// in case our (greasemonkey) script runs after onload
+			setTimeout( function() { receivedMessage( true ); }, 1000 );
+		}, false );
+
+		iframe.src = getTargetOrigin() + '/search?q=cache%3A';
+
+		body.appendChild( iframe );
+	}
+
+	function receivedMessage( e ) {
+		var me = arguments.callee,
+			parent = me.parent,
+			iframe = me.iframe,
+			data;
+
+		if ( e === true ) {
+			// init sync
+
+			parent = me.parent = getToken();
+
+			postToIframe( {
+				type: 'init',
+				parent: parent
+			} );
+			return;
+		}
+
+		if ( e && e.origin === getTargetOrigin() ) {
+			data = window.JSON.parse( e.data ) || {};
+
+			switch ( data.type ) {
+			case 'init':
+				// received init from parent, acknowledge
+
+				parent = me.parent = data.parent;
+				iframe = me.iframe = getToken();
+
+				postToParent( {
+					type: 'init-ack',
+					parent: parent,
+					iframe: iframe
+				} );
+				break;
+
+			case 'init-ack':
+				if ( data.parent === parent ) {
+					// init complete, send options
+
+					iframe = me.iframe = data.iframe;
+
+					postToIframe( {
+						type: 'sync',
+						parent: parent,
+						iframe: iframe,
+						options: $.extend( {}, options )
+					} );
+				}
+				break;
+
+			case 'sync':
+				if ( data.parent === parent && data.iframe === iframe ) {
+					// received options from parent
+
+					$.extend( options, data.options );
+					saveOptions( options );
+
+					postToParent( {
+						type: 'sync-ack',
+						parent: parent,
+						iframe: iframe
+					} );
+
+					me.parent = me.iframe = null;
+				}
+				break;
+
+			case 'sync-ack':
+				if ( data.parent === parent && data.iframe === iframe ) {
+					// sync complete
+
+					body.removeChild( document.getElementById( id.synchronizeIframe ) );
+					me.parent = me.iframe = null;
+				}
+				break;
+			}
+		}
+	}
+
+	function postToIframe( data ) {
+		execScript( [
+			'document.getElementById(\'', id.synchronizeIframe, '\')',
+				'.contentWindow',
+					'.postMessage(\'', window.JSON.stringify( data ), '\', \'', getTargetOrigin(), '\');'
+		].join( '' ) );
+	}
+
+	function postToParent( data ) {
+		execScript( [
+			'if ( parent !== self ) {',
+				'parent.postMessage(\'', window.JSON.stringify( data ), '\', \'', getTargetOrigin(), '\');',
+			'}'
+		].join( '' ) );
+	}
+
+	function getTargetOrigin() {
+		var me = arguments.callee;
+
+		if ( !me.cached ) {
+			me.cached = ( window.location.protocol === 'http:' ? 'https:' : 'http:' ) + '//' + window.location.host;
+		}
+
+		return me.cached;
 	}
 
 
@@ -1021,6 +1178,12 @@
 		setCacheLinkColors();
 	}
 
+	function synchronizeOptionsLinkClick( e ) {
+		e.preventDefault();
+
+		synchronizeOptions();
+	}
+
 	// show / hide about panel
 	function aboutLinkClick( e ) {
 		var panel = $( '#' + id.about )[ 0 ];
@@ -1060,5 +1223,13 @@
 		return ids;
 	}
 
-})( window, document, document.getElementsByTagName('head')[0] );
+	// runs the given script by appending a script element to the page
+	function execScript( code ) {
+		var script = $( '<script></script>' );
+		script.appendChild( document.createTextNode( code ) );
+		body.appendChild( script );
+		setTimeout( function() { body.removeChild( script ); }, 500 ); // not sure we need to wait, but doesn't hurt?
+	}
+
+})( window, document, document.getElementsByTagName('head')[0], document.body );
 
