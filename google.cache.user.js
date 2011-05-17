@@ -138,7 +138,13 @@
 		textOptionInstructions: 'Leave a field blank to reset to default',
 
 		// synchronize http / https options link text
-		syncOptions: 'Sync options between HTTP and HTTPS',
+		syncLinkText: 'Sync options between HTTP and HTTPS',
+
+		// synchronizing text
+		syncing: 'Syncing&hellip;',
+
+		// sync done text
+		syncDone: 'done!',
 
 		// if the cache page host matches this, then we can save options in Chrome
 		// http and https pages will have separate options though :-(
@@ -391,7 +397,7 @@
 		cacheTerm = findCacheTerm( searchQuery ),
 
 		// element ids
-		id = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks useHttps cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor syncOptionsLink syncIframe aboutLink about closeLink checkLink checkResults'.split( ' ' ) ),
+		id = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks useHttps cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor syncLink syncing syncDone syncIframe aboutLink about closeLink checkLink checking updateLink'.split( ' ' ) ),
 
 		// script version
 		version = '0.5',
@@ -766,7 +772,12 @@
 					strings.about,
 				'</a>',
 				space,
-				'<span id="', id.checkResults, '"></span>',
+				'<span id="', id.checking, '">',
+					strings.checking,
+				'</span>',
+				'<a href="', strings.homepageUrl, '" id="', id.updateLink, '" ', getInlineStyle( css.link ), ' target="_blank">',
+					strings.update,
+				'</a>',
 
 				'<div id="', id.about, '" ', getInlineStyle( css.panel ), '>',
 					'<p ', getInlineStyle( css.about.text ), '>',
@@ -842,9 +853,15 @@
 						strings.textOptionInstructions,
 						usingLocalStorage ? [
 							'<br>',
-							'<a href="" id="', id.syncOptionsLink, '" ', getInlineStyle( css.link ), '>',
-								strings.syncOptions,
-							'</a>'
+							'<a href="" id="', id.syncLink, '" ', getInlineStyle( css.link ), '>',
+								strings.syncLinkText,
+							'</a>',
+							'<span id="', id.syncing, '" style="display:none;">',
+								strings.syncing,
+							'</span>',
+							'<span id="', id.syncDone, '" style="display:none;">&nbsp;',
+								strings.syncDone,
+							'</span>'
 						].join( '' ) : '',
 					].join( '' ) : '',
 
@@ -878,7 +895,7 @@
 			$( '#' + id.cacheLinkTextColor )[ 0 ].addEventListener( 'change', cacheLinkTextColorChange, false );
 
 			if ( usingLocalStorage ) {
-				$( '#' + id.syncOptionsLink )[ 0 ].addEventListener( 'click', syncOptionsLinkClick, false );
+				$( '#' + id.syncLink )[ 0 ].addEventListener( 'click', syncLinkClick, false );
 			}
 		}
 
@@ -907,7 +924,7 @@
 				$( '#' + id.cacheLinkTextColor )[ 0 ].removeEventListener( 'change', cacheLinkTextColorChange, false );
 
 				if ( usingLocalStorage ) {
-					$( '#' + id.syncOptionsLink )[ 0 ].removeEventListener( 'click', syncOptionsLinkClick, false );
+					$( '#' + id.syncLink )[ 0 ].removeEventListener( 'click', syncLinkClick, false );
 				}
 			}
 
@@ -963,13 +980,14 @@
 	}
 
 	function showChecking() {
-		$( '#' + id.checkResults )[ 0 ].innerHTML = strings.checking;
+		$( '#' + id.checking )[ 0 ].style.display = 'inline';
+		$( '#' + id.updateLink )[ 0 ].style.display = 'none';
 		$( '#' + id.checkLink )[ 0 ].style.display = 'none';
 	}
 
 	function reflectUpdateStatus( options ) {
-		$( '#' + id.checkResults )[ 0 ].innerHTML = options.updateAvailable ?
-			'<a href="' + strings.homepageUrl + '" ' + getInlineStyle( css.link ) + ' target="_blank">' + strings.update + '</a>' : '';
+		$( '#' + id.checking )[ 0 ].style.display = 'none';
+		$( '#' + id.updateLink )[ 0 ].style.display = options.updateAvailable ? 'inline' : 'none';
 		$( '#' + id.checkLink )[ 0 ].style.display = options.canCheckForUpdate ? 'inline' : 'none';
 	}
 
@@ -994,6 +1012,10 @@
 
 			// if the iframe takes too long to load, force cleanup
 			syncCleanup.timeout = window.setTimeout( syncCleanup, 10000 );
+
+			$( '#' + id.syncLink )[ 0 ].style.display = 'none';
+			$( '#' + id.syncing )[ 0 ].style.display = 'inline';
+			$( '#' + id.syncDone )[ 0 ].style.display = 'none';
 		}
 	}
 
@@ -1002,14 +1024,27 @@
 		window.setTimeout( receivedMessage, 1000 );
 	}
 
-	function syncCleanup() {
-		var iframe;
+	function syncCleanup( success ) {
+		var iframe, after;
 
 		if ( syncing ) {
 			iframe = document.getElementById( id.syncIframe );
 			iframe.removeEventListener( 'load', syncIframeLoad, false );
 			body.removeChild( iframe );
 			syncing = false;
+
+			after = function() {
+				$( '#' + id.syncLink )[ 0 ].style.display = 'inline';
+				$( '#' + id.syncing )[ 0 ].style.display = 'none';
+				$( '#' + id.syncDone )[ 0 ].style.display = 'none';
+			};
+
+			if ( success ) {
+				$( '#' + id.syncDone )[ 0 ].style.display = 'inline';
+				window.setTimeout( after, 2000 );
+			} else {
+				after();
+			}
 		}
 
 		window.clearTimeout( syncCleanup.timeout );
@@ -1078,7 +1113,7 @@
 
 			case 'sync-ack': // sync complete
 				if ( data.parent === parent && data.iframe === iframe ) {
-					syncCleanup();
+					syncCleanup( true );
 					me.parent = me.iframe = null;
 				}
 				break;
@@ -1192,7 +1227,7 @@
 		setCacheLinkColors();
 	}
 
-	function syncOptionsLinkClick( e ) {
+	function syncLinkClick( e ) {
 		e.preventDefault();
 
 		syncOptions();
