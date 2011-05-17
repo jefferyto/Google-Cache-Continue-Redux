@@ -137,7 +137,7 @@
 		textOptionInstructions: 'Leave a field blank to reset to default',
 
 		// synchronize http / https options link text
-		synchronizeOptions: 'Synchronize options between HTTP and HTTPS',
+		syncOptions: 'Sync options between HTTP and HTTPS',
 
 		// if the cache page host matches this, then we can save options in Chrome
 		// http and https pages will have separate options though :-(
@@ -390,7 +390,7 @@
 		cacheTerm = findCacheTerm( searchQuery ),
 
 		// element ids
-		id = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks useHttps cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor synchronizeOptionsLink synchronizeIframe aboutLink about closeLink checkLink checkResults'.split( ' ' ) ),
+		id = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks useHttps cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor syncOptionsLink syncIframe aboutLink about closeLink checkLink checkResults'.split( ' ' ) ),
 
 		// script version
 		version = '0.5',
@@ -811,7 +811,7 @@
 									'</label>',
 								'</td>',
 								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<input type="text" id="', id.cacheLinkText, '" value="', options.cacheLinkText, '" ', getInlineStyle( css.options.input.text ) + ' />',
+									'<input type="text" id="', id.cacheLinkText, '" value="', options.cacheLinkText.replace( /"/g, '&quot;' ), '" ', getInlineStyle( css.options.input.text ) + ' />',
 								'</td>',
 							'</tr>',
 							'<tr>',
@@ -821,7 +821,7 @@
 									'</label>',
 								'</td>',
 								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<input type="text" id="', id.cacheLinkBackgroundColor, '" value="', options.cacheLinkBackgroundColor, '" ', getInlineStyle( css.options.input.text ) + ' />',
+									'<input type="text" id="', id.cacheLinkBackgroundColor, '" value="', options.cacheLinkBackgroundColor.replace( /"/g, '&quot;' ), '" ', getInlineStyle( css.options.input.text ) + ' />',
 								'</td>',
 							'</tr>',
 							'<tr>',
@@ -831,15 +831,15 @@
 									'</label>',
 								'</td>',
 								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<input type="text" id="', id.cacheLinkTextColor, '" value="', options.cacheLinkTextColor, '" ', getInlineStyle( css.options.input.text ) + ' />',
+									'<input type="text" id="', id.cacheLinkTextColor, '" value="', options.cacheLinkTextColor.replace( /"/g, '&quot;' ), '" ', getInlineStyle( css.options.input.text ) + ' />',
 								'</td>',
 							'</tr>',
 						'</table>',
 						strings.textOptionInstructions,
 						usingLocalStorage ? [
 							'<br>',
-							'<a href="" id="', id.synchronizeOptionsLink, '" ', getInlineStyle( css.link ), '>',
-								strings.synchronizeOptions,
+							'<a href="" id="', id.syncOptionsLink, '" ', getInlineStyle( css.link ), '>',
+								strings.syncOptions,
 							'</a>'
 						].join( '' ) : '',
 					].join( '' ) : '',
@@ -874,7 +874,7 @@
 			$( '#' + id.cacheLinkTextColor )[ 0 ].addEventListener( 'change', cacheLinkTextColorChange, false );
 
 			if ( usingLocalStorage ) {
-				$( '#' + id.synchronizeOptionsLink )[ 0 ].addEventListener( 'click', synchronizeOptionsLinkClick, false );
+				$( '#' + id.syncOptionsLink )[ 0 ].addEventListener( 'click', syncOptionsLinkClick, false );
 			}
 		}
 
@@ -903,7 +903,7 @@
 				$( '#' + id.cacheLinkTextColor )[ 0 ].removeEventListener( 'change', cacheLinkTextColorChange, false );
 
 				if ( usingLocalStorage ) {
-					$( '#' + id.synchronizeOptionsLink )[ 0 ].removeEventListener( 'click', synchronizeOptionsLinkClick, false );
+					$( '#' + id.syncOptionsLink )[ 0 ].removeEventListener( 'click', syncOptionsLinkClick, false );
 				}
 			}
 
@@ -978,8 +978,8 @@
 	// we need to use execScript() here because Chrome won't let an extension on the parent window access the window object of an iframe
 	// (or an extension on the iframe access the parent window object)
 
-	function synchronizeOptions() {
-		var iframe = $( '<iframe id="' + id.synchronizeIframe + '" width="1" height="1" style="position:absolute;top:-99999px;visibility:hidden;"></iframe>' );
+	function syncOptions() {
+		var iframe = $( '<iframe id="' + id.syncIframe + '" width="1" height="1" style="position:absolute;top:-99999px;visibility:hidden;"></iframe>' );
 
 		iframe.addEventListener( 'load', function() {
 			iframe.removeEventListener( 'load', arguments.callee, false );
@@ -1064,7 +1064,7 @@
 				if ( data.parent === parent && data.iframe === iframe ) {
 					// sync complete
 
-					body.removeChild( document.getElementById( id.synchronizeIframe ) );
+					body.removeChild( document.getElementById( id.syncIframe ) );
 					me.parent = me.iframe = null;
 				}
 				break;
@@ -1074,16 +1074,16 @@
 
 	function postToIframe( data ) {
 		execScript( [
-			'document.getElementById(\'', id.synchronizeIframe, '\')',
+			'document.getElementById(\'', id.syncIframe, '\')',
 				'.contentWindow',
-					'.postMessage(\'', window.JSON.stringify( data ), '\', \'', getTargetOrigin(), '\');'
+					'.postMessage(\'', window.JSON.stringify( data ).replace( /\\/g, '\\\\' ).replace( /'/g, '\\\'' ), '\', \'', getTargetOrigin(), '\');'
 		].join( '' ) );
 	}
 
 	function postToParent( data ) {
 		execScript( [
 			'if ( parent !== self ) {',
-				'parent.postMessage(\'', window.JSON.stringify( data ), '\', \'', getTargetOrigin(), '\');',
+				'parent.postMessage(\'', window.JSON.stringify( data ).replace( /\\/g, '\\\\' ).replace( /'/g, '\\\'' ), '\', \'', getTargetOrigin(), '\');',
 			'}'
 		].join( '' ) );
 	}
@@ -1178,10 +1178,10 @@
 		setCacheLinkColors();
 	}
 
-	function synchronizeOptionsLinkClick( e ) {
+	function syncOptionsLinkClick( e ) {
 		e.preventDefault();
 
-		synchronizeOptions();
+		syncOptions();
 	}
 
 	// show / hide about panel
