@@ -138,10 +138,11 @@
 		textOptionInstructions: 'Leave a field blank to reset to default',
 
 		// synchronize http / https options link text
-		syncLinkText: 'Sync options between HTTP and HTTPS',
+		// %s will be replaced by the appropriate protocol (HTTP/HTTPS)
+		syncLinkText: 'Copy options to %s Google cache',
 
 		// synchronizing text
-		syncing: 'Syncing&hellip;',
+		syncing: 'Copying&hellip;',
 
 		// sync done text
 		syncDone: 'done!',
@@ -411,6 +412,9 @@
 		// true if we are syncing options
 		syncing = false,
 
+		// true if we're under http (false for https)
+		isHttp = window.location.protocol === 'http:',
+
 		// script options
 		options,
 
@@ -435,7 +439,7 @@
 	saveOptions( options );
 
 	if ( isCachePage( searchQuery ) ) {
-		if ( options.useHttps && window.location.protocol === 'http:' ) {
+		if ( options.useHttps && isHttp ) {
 			window.setTimeout( function() { window.location.replace( window.location.href.replace( /^http:/i, 'https:' ) ); }, 0 );
 
 		} else {
@@ -854,7 +858,7 @@
 						usingLocalStorage ? [
 							'<br>',
 							'<a href="" id="', id.syncLink, '" ', getInlineStyle( css.link ), '>',
-								strings.syncLinkText,
+								strings.syncLinkText.replace( /%s/g, isHttp ? 'HTTPS' : 'HTTP' ),
 							'</a>',
 							'<span id="', id.syncing, '" style="display:none;">',
 								strings.syncing,
@@ -1141,7 +1145,7 @@
 		var me = arguments.callee;
 
 		if ( !me.cached ) {
-			me.cached = ( window.location.protocol === 'http:' ? 'https:' : 'http:' ) + '//' + window.location.host;
+			me.cached = ( isHttp ? 'https:' : 'http:' ) + '//' + window.location.host;
 		}
 
 		return me.cached;
