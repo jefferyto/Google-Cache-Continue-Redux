@@ -11,7 +11,8 @@ See [userscripts.org](http://userscripts.org/scripts/show/30878) for more detail
 - Works with cache pages under HTTPS / SSL
 - Added an option to always use HTTPS
 - Options can be saved in Chrome, if the cache page comes from webcache.googleusercontent.com
-  Also, options cannot be shared across HTTP and HTTPS cache pages
+- Added a function to sync options between HTTP and HTTPS cache pages in Chrome
+  Must be manually trigger since it requires an iframe page load
 - Cache link text change takes effect immediately, instead of after page reload
 - Added an About panel
 - Added a "Check for updates" function, inside the About panel (fails silently in Chrome due to browser restrictions)

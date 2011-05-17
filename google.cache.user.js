@@ -44,7 +44,8 @@
 // - Works with cache pages under HTTPS / SSL
 // - Added an option to always use HTTPS
 // - Options can be saved in Chrome, if the cache page comes from webcache.googleusercontent.com
-//   Also, options cannot be shared across HTTP and HTTPS cache pages
+// - Added a function to sync options between HTTP and HTTPS cache pages in Chrome
+//   Must be manually trigger since it requires an iframe page load
 // - Cache link text change takes effect immediately, instead of after page reload
 // - Added an About panel
 // - Added a "Check for updates" function, inside the About panel (fails silently in Chrome due to browser restrictions)
@@ -401,6 +402,9 @@
 		// true of we're using localStorage to save options
 		usingLocalStorage = false,
 
+		// true if we are syncing options
+		syncing = false,
+
 		// script options
 		options,
 
@@ -426,7 +430,7 @@
 
 	if ( isCachePage( searchQuery ) ) {
 		if ( options.useHttps && window.location.protocol === 'http:' ) {
-			setTimeout( function() { window.location.replace( window.location.href.replace( /^http:/i, 'https:' ) ); }, 0 );
+			window.setTimeout( function() { window.location.replace( window.location.href.replace( /^http:/i, 'https:' ) ); }, 0 );
 
 		} else {
 			links = scanLinks( cacheTerm );
@@ -979,18 +983,36 @@
 	// (or an extension on the iframe access the parent window object)
 
 	function syncOptions() {
-		var iframe = $( '<iframe id="' + id.syncIframe + '" width="1" height="1" style="position:absolute;top:-99999px;visibility:hidden;"></iframe>' );
+		var iframe;
 
-		iframe.addEventListener( 'load', function() {
-			iframe.removeEventListener( 'load', arguments.callee, false );
+		if ( !syncing ) {
+			iframe = $( '<iframe id="' + id.syncIframe + '" width="1" height="1" style="position:absolute;top:-99999px;visibility:hidden;"></iframe>' );
+			iframe.addEventListener( 'load', syncIframeLoad, false );
+			iframe.src = getTargetOrigin() + '/search?q=cache%3A';
+			body.appendChild( iframe );
+			syncing = true;
 
-			// in case our (greasemonkey) script runs after onload
-			setTimeout( function() { receivedMessage( true ); }, 1000 );
-		}, false );
+			// if the iframe takes too long to load, force cleanup
+			syncCleanup.timeout = window.setTimeout( syncCleanup, 10000 );
+		}
+	}
 
-		iframe.src = getTargetOrigin() + '/search?q=cache%3A';
+	function syncIframeLoad() {
+		// setTimeout in case our (greasemonkey) script runs after onload
+		window.setTimeout( receivedMessage, 1000 );
+	}
 
-		body.appendChild( iframe );
+	function syncCleanup() {
+		var iframe;
+
+		if ( syncing ) {
+			iframe = document.getElementById( id.syncIframe );
+			iframe.removeEventListener( 'load', syncIframeLoad, false );
+			body.removeChild( iframe );
+			syncing = false;
+		}
+
+		window.clearTimeout( syncCleanup.timeout );
 	}
 
 	function receivedMessage( e ) {
@@ -999,39 +1021,35 @@
 			iframe = me.iframe,
 			data;
 
-		if ( e === true ) {
-			// init sync
+		if ( !e ) { // init sync
+			if ( !parent && !iframe ) {
+				parent = me.parent = getToken();
 
-			parent = me.parent = getToken();
+				postToIframe( {
+					type: 'init',
+					parent: parent
+				} );
+			}
 
-			postToIframe( {
-				type: 'init',
-				parent: parent
-			} );
-			return;
-		}
-
-		if ( e && e.origin === getTargetOrigin() ) {
+		} else if ( e.origin === getTargetOrigin() ) {
 			data = window.JSON.parse( e.data ) || {};
 
 			switch ( data.type ) {
-			case 'init':
-				// received init from parent, acknowledge
+			case 'init': // received init from parent, acknowledge
+				if ( !parent && !iframe ) {
+					parent = me.parent = data.parent;
+					iframe = me.iframe = getToken();
 
-				parent = me.parent = data.parent;
-				iframe = me.iframe = getToken();
-
-				postToParent( {
-					type: 'init-ack',
-					parent: parent,
-					iframe: iframe
-				} );
+					postToParent( {
+						type: 'init-ack',
+						parent: parent,
+						iframe: iframe
+					} );
+				}
 				break;
 
-			case 'init-ack':
-				if ( data.parent === parent ) {
-					// init complete, send options
-
+			case 'init-ack': // init complete, send options
+				if ( data.parent === parent && !iframe ) {
 					iframe = me.iframe = data.iframe;
 
 					postToIframe( {
@@ -1043,10 +1061,8 @@
 				}
 				break;
 
-			case 'sync':
+			case 'sync': // received options from parent
 				if ( data.parent === parent && data.iframe === iframe ) {
-					// received options from parent
-
 					$.extend( options, data.options );
 					saveOptions( options );
 
@@ -1056,15 +1072,13 @@
 						iframe: iframe
 					} );
 
-					me.parent = me.iframe = null;
+					me.parent = me.iframe = true;
 				}
 				break;
 
-			case 'sync-ack':
+			case 'sync-ack': // sync complete
 				if ( data.parent === parent && data.iframe === iframe ) {
-					// sync complete
-
-					body.removeChild( document.getElementById( id.syncIframe ) );
+					syncCleanup();
 					me.parent = me.iframe = null;
 				}
 				break;
@@ -1228,7 +1242,7 @@
 		var script = $( '<script></script>' );
 		script.appendChild( document.createTextNode( code ) );
 		body.appendChild( script );
-		setTimeout( function() { body.removeChild( script ); }, 500 ); // not sure we need to wait, but doesn't hurt?
+		window.setTimeout( function() { body.removeChild( script ); }, 500 ); // not sure we need to wait, but doesn't hurt?
 	}
 
 })( window, document, document.getElementsByTagName('head')[0], document.body );
