@@ -45,12 +45,12 @@
 // - Added an option to always use HTTPS
 // - Options can be saved in Chrome, if the cache page comes from webcache.googleusercontent.com
 // - Added a function to sync options between HTTP and HTTPS cache pages in Chrome
-//   Must be manually trigger since it requires an iframe page load
+//   Must be manually triggered since it requires an iframe page load
 // - Cache link text change takes effect immediately, instead of after page reload
 // - Added default styles to our elements so that they're more resistant to in-page styles
 // - Added an About panel
 // - Added a "Check for updates" function, inside the About panel (fails silently in Chrome due to browser restrictions)
-// - Auto-check for updates every 4 weeks
+// - Auto-check for updates every 60 days
 // - Another refactoring
 
 // v0.4 (2010-02-10)
@@ -186,8 +186,8 @@
 		// install newer version link text
 		update: 'Install latest version',
 
-		// script url
-		scriptUrl: 'http://userscripts.org/scripts/source/30878.user.js'
+		// meta url
+		metaUrl: 'http://userscripts.org/scripts/source/30878.meta.js'
 	},
 
 	// modify these to change the appearance of things
@@ -950,8 +950,8 @@
 	 * check for update
 	 */
 
-	// check every 4 weeks
-	function shouldCheckForUpdate( options ) { return now() - parseInt( options.lastUpdateCheck, 10 ) >= 28 * 24 * 60 * 60 * 1000; }
+	// check every 60 days
+	function shouldCheckForUpdate( options ) { return now() - parseInt( options.lastUpdateCheck, 10 ) >= 60 * 24 * 60 * 60 * 1000; }
 
 	function checkForUpdate( options ) {
 		options.lastUpdateCheck = now() + '';
@@ -968,7 +968,7 @@
 		try {
 			GM_xmlhttpRequest( {
 				method: 'GET',
-				url: strings.scriptUrl + '?_=' + now(),
+				url: strings.metaUrl + '?_=' + now(),
 
 				onload: function( data ) {
 					var a = /\/\/[ \t]*@version[ \t]+([^\s]+)/.exec( data.responseText || '' );
