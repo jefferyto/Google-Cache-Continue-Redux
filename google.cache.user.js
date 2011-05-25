@@ -1290,5 +1290,5 @@
 		window.setTimeout( function() { body.removeChild( script ); }, 500 ); // not sure we need to wait, but doesn't hurt?
 	}
 
-})( window, document, document.getElementsByTagName('head')[0], document.body );
+})( window, document, document.getElementsByTagName( 'head' )[ 0 ], document.body );
 
