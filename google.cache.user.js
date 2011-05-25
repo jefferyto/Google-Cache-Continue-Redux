@@ -274,10 +274,11 @@
 
 			input_text: {
 				'background': '#fff',
-				'border': '1px solid threedface',
+				'border': '1px solid #999',
 				'cursor': 'text',
 				'display': 'inline',
-				'padding': '1px 0',
+				'margin': '1px 0',
+				'padding': '2px 1px',
 				'text-align': 'start'
 			},
 
