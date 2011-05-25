@@ -6,7 +6,7 @@ See [userscripts.org](http://userscripts.org/scripts/show/30878) for more detail
 
 ## Redux changelog: ##
 
-### v0.5 (?) ###
+### v0.5 (2011-05-25) ###
 
 - Works with cache pages under HTTPS / SSL
 - Added an option to always use HTTPS

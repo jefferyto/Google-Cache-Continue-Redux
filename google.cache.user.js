@@ -40,7 +40,7 @@
 
 // Redux changelog:
 
-// v0.5 (?)
+// v0.5 (2011-05-25)
 // - Works with cache pages under HTTPS / SSL
 // - Added an option to always use HTTPS
 // - Options can be saved in Chrome, if the cache page comes from webcache.googleusercontent.com
