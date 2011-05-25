@@ -14,6 +14,7 @@ See [userscripts.org](http://userscripts.org/scripts/show/30878) for more detail
 - Added a function to sync options between HTTP and HTTPS cache pages in Chrome
   Must be manually trigger since it requires an iframe page load
 - Cache link text change takes effect immediately, instead of after page reload
+- Added default styles to our elements so that they're more resistant to in-page styles
 - Added an About panel
 - Added a "Check for updates" function, inside the About panel (fails silently in Chrome due to browser restrictions)
 - Auto-check for updates every 4 weeks

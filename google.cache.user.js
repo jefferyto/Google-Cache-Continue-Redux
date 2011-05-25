@@ -47,6 +47,7 @@
 // - Added a function to sync options between HTTP and HTTPS cache pages in Chrome
 //   Must be manually trigger since it requires an iframe page load
 // - Cache link text change takes effect immediately, instead of after page reload
+// - Added default styles to our elements so that they're more resistant to in-page styles
 // - Added an About panel
 // - Added a "Check for updates" function, inside the About panel (fails silently in Chrome due to browser restrictions)
 // - Auto-check for updates every 4 weeks
@@ -192,118 +193,119 @@
 	// modify these to change the appearance of things
 	css = {
 		cacheLink: {
-			'position': 'static',
-			'display': 'inline',
-			'visibility': 'visible',
+			'font-size': 'x-small',
+			'font-weight': 'bold',
 			'margin': '0.3ex',
 			'padding': '0 0.6ex 0.4ex 0.3ex',
-			'border': 'none',
-			'font': 'normal bold x-small sans-serif',
-			'text-align': 'left',
-			'text-decoration': 'none',
-			'text-transform': 'none',
-			'letter-spacing': 'normal',
-			'word-spacing': 'normal',
-			'vertical-align': 'baseline',
-			'cursor': 'pointer'
+			'text-decoration': 'none'
 		},
 
 		uncached: {
-			'position': 'static',
-			'display': 'block',
-			'visibility': 'visible',
-			'width': 'auto',
-			'height': 'auto',
-			'margin': '1em 0;',
-			'padding': '1ex 0.5ex',
-			'border': '1px solid #3366CC',
-			'font-family': 'inherit',
-			'font-style': 'normal',
-			'font-variant': 'normal',
-			'font-weight': 'normal',
-			'font-stretch': 'normal',
-			'font-size': 'inherit',
-			'font-size-adjust': 'none',
-			'line-height': 'inherit',
-			'background': 'transparent',
-			'color': 'black',
-			'text-align': 'left',
-			'text-decoration': 'none',
-			'text-transform': 'none',
-			'letter-spacing': 'normal',
-			'word-spacing': 'normal',
-			'vertical-align': 'baseline',
-			'cursor': 'auto'
+			'border': '1px solid #3366cc',
+			'padding': '1ex 0.5ex'
 		},
 
 		explanation: {
-			'position': 'static',
-			'display': 'block',
-			'visibility': 'visible',
-			'width': 'auto',
-			'height': 'auto',
-			'margin': '1em 0;',
-			'padding': '1ex 0.5ex',
-			'border': '1px solid #3366CC',
-			'font-family': 'inherit',
-			'font-style': 'normal',
-			'font-variant': 'normal',
-			'font-weight': 'normal',
-			'font-stretch': 'normal',
-			'font-size': 'inherit',
-			'font-size-adjust': 'none',
-			'line-height': 'inherit',
-			'background': 'transparent',
-			'color': 'black',
-			'text-align': 'left',
-			'text-decoration': 'none',
-			'text-transform': 'none',
-			'letter-spacing': 'normal',
-			'word-spacing': 'normal',
-			'vertical-align': 'baseline',
-			'cursor': 'auto'
+			'border': '1px solid #999',
+			'margin': '1em 0',
+			'padding': '1ex 0.5ex'
 		},
 
 		panel: {
 			'margin-top': '0.5em'
 		},
 
-		link: {
-		},
+		defaults: {
+			// used to reset styles
+			reset: {
+				'background': 'none',
+				'border': '0',
+				'clear': 'none',
+				'clip': 'auto',
+				'color': '#000',
+				'content': 'normal',
+				'cursor': 'auto',
+				'float': 'none',
+				'font': '13px arial,sans-serif',
+				'font-stretch': 'normal',
+				'font-size-adjust': 'none',
+				'height': 'auto',
+				'letter-spacing': 'normal',
+				'list-style': 'none',
+				'margin': '0',
+				'overflow': 'visible',
+				'padding': '0',
+				'position': 'static',
+				'text-align': 'left',
+				'text-decoration': 'none',
+				'text-indent': '0',
+				'text-transform': 'none',
+				'vertical-align': 'baseline',
+				'visibility': 'visible',
+				'white-space': 'normal',
+				'width': 'auto',
+				'word-spacing': 'normal',
+				'z-index': 'auto'
+			},
 
-		options: {
-			input: {
-				checkbox: {
-					'vertical-align': 'middle'
-				},
+			// styles for each element type
 
-				text: {
-				}
+			a: {
+				'cursor': 'pointer',
+				'color': '#00c',
+				'display': 'inline',
+				'text-decoration': 'underline'
+			},
+
+			b: {
+				'display': 'inline',
+				'font-weight': 'bold'
+			},
+
+			div: {
+				'display': 'block',
+			},
+
+			input_checkbox: {
+				'display': 'inline',
+				'margin': '3px',
+				'vertical-align': 'middle'
+			},
+
+			input_text: {
+				'background': '#fff',
+				'border': '1px solid threedface',
+				'cursor': 'text',
+				'display': 'inline',
+				'padding': '1px 0',
+				'text-align': 'start'
 			},
 
 			label: {
+				'cursor': 'default',
+				'display': 'inline',
 				'vertical-align': 'middle'
 			},
 
 			table: {
+				'display': 'table',
 				'margin': '0.5em 0',
 				'border-collapse': 'collapse'
 			},
 
-			th: {
-			},
-
 			td: {
+				'display': 'table-cell',
 				'padding-right': '5px'
-			}
-		},
-
-		about: {
-			text: {
 			},
 
-			title: {
+			th: {
+				'display': 'table-cell',
 				'font-weight': 'bold'
+			},
+
+			p: {
+				'display': 'block',
+				'margin': '1em 0'
 			}
 		}
 	};
@@ -643,7 +645,7 @@
 					href = link.href;
 					hash = link.hash;
 					cacheHref = tmplHref.replace( cacheTerm, encodeURIComponent( 'cache:' + href.replace( hash, '' ) ) ) + hash;
-					cacheLink = $( '<a href="' + cacheHref + '" class="' + id.cacheLink + '" ' + getInlineStyle( css.cacheLink ) + '>' + options.cacheLinkText + '</a>' );
+					cacheLink = $( '<a href="' + cacheHref + '" class="' + id.cacheLink + '" ' + getInlineStyle( 'a', css.cacheLink ) + '>' + options.cacheLinkText + '</a>' );
 
 					list.push( {
 						link: link,
@@ -679,10 +681,13 @@
 		return $( buf.join( '' ) );
 	}
 
-	// returns a string for the given rules object
-	function getInlineStyle( rules ) {
+	// returns a string for the given tag and rules object
+	function getInlineStyle( tag, rules ) {
 		var buf = [ 'style="' ];
 
+		if ( tag !== false ) {
+			rules = $.extend( {}, css.defaults.reset, css.defaults[ tag ], rules || {} );
+		}
 		$.each( rules, function( prop, val ) { buf.push( prop, ':', val, ';' ); } );
 
 		buf.push('"');
@@ -752,12 +757,13 @@
 
 	// adds a link for the original URL to the Google search results page
 	// safer to add after the list of suggestions
+	// should be safe to not add a lot of default styles here
 	function addOriginalLink( url ) {
 		var ul = $( 'ul' )[ 0 ],
 			msg = strings.uncached.replace( /%s/g, '<a href="' + ( url.indexOf( '://' ) === -1 ? 'http://' : '' ) + url + '">' + url + '</a>' );
 
 		if ( ul ) {
-			$.insertAfter( $( '<p ' + getInlineStyle( css.uncached ) + '>' + msg + '</p>' ), ul );
+			$.insertAfter( $( '<p ' + getInlineStyle( false, css.uncached ) + '>' + msg + '</p>' ), ul );
 		}
 	}
 
@@ -767,97 +773,97 @@
 
 		// OMG this is ugly
 		container.appendChild( $( [
-			'<div ', getInlineStyle( css.explanation ), '>',
+			'<div ', getInlineStyle( 'div', css.explanation ), '>',
 				'<span id="', id.message, '"></span>',
 				space,
-				'<a href="" id="', id.optionsLink, '" ', getInlineStyle( css.link ), '></a>',
+				'<a href="" id="', id.optionsLink, '" ', getInlineStyle( 'a' ), '></a>',
 				space,
-				'<a href="" id="', id.aboutLink, '" ', getInlineStyle( css.link ), '>',
+				'<a href="" id="', id.aboutLink, '" ', getInlineStyle( 'a' ), '>',
 					strings.about,
 				'</a>',
 				space,
 				'<span id="', id.checking, '">',
 					strings.checking,
 				'</span>',
-				'<a href="', strings.homepageUrl, '" id="', id.updateLink, '" ', getInlineStyle( css.link ), ' target="_blank">',
+				'<a href="', strings.homepageUrl, '" id="', id.updateLink, '" ', getInlineStyle( 'a' ), ' target="_blank">',
 					strings.update,
 				'</a>',
 
-				'<div id="', id.about, '" ', getInlineStyle( css.panel ), '>',
-					'<p ', getInlineStyle( css.about.text ), '>',
-						'<span ', getInlineStyle( css.about.title ), '>',
+				'<div id="', id.about, '" ', getInlineStyle( 'div', css.panel ), '>',
+					'<p ', getInlineStyle( 'p' ), '>',
+						'<b ', getInlineStyle( 'b' ), '>',
 							strings.aboutTitle,
-						'</span>',
+						'</b>',
 						'<br>',
 						strings.version.replace(/%s/g, version ),
 						'<br>',
-						'<a href="', strings.homepageUrl, '" target="_blank" ', getInlineStyle( css.link ), '>',
+						'<a href="', strings.homepageUrl, '" target="_blank" ', getInlineStyle( 'a' ), '>',
 							strings.homepage,
 						'</a>',
 						space,
-						'<a href="" id="', id.checkLink, '" ', getInlineStyle( css.link ), '>',
+						'<a href="" id="', id.checkLink, '" ', getInlineStyle( 'a' ), '>',
 							strings.check,
 						'</a>',
 					'</p>',
-					'<p ', getInlineStyle( css.about.text ), '>',
+					'<p ', getInlineStyle( 'p' ), '>',
 						strings.aboutText,
 					'</p>',
-					'<a href="" id="', id.closeLink, '" ', getInlineStyle( css.link ), '>', strings.close, '</a>',
+					'<a href="" id="', id.closeLink, '" ', getInlineStyle( 'a' ), '>', strings.close, '</a>',
 				'</div>',
 
-				'<div id="', id.options, '" ', getInlineStyle( css.panel ), '>',
-					'<input type="checkbox" id="', id.redirectPageLinks, '" ', getInlineStyle( css.options.input.checkbox ), ' />',
-					'<label for="', id.redirectPageLinks, '" ', getInlineStyle( css.options.label ), '>',
+				'<div id="', id.options, '" ', getInlineStyle( 'div', css.panel ), '>',
+					'<input type="checkbox" id="', id.redirectPageLinks, '" ', getInlineStyle( 'input_checkbox' ), ' />',
+					'<label for="', id.redirectPageLinks, '" ', getInlineStyle( 'label' ), '>',
 						strings.redirectPageLinksLabel,
 					'</label>',
 					'<br>',
-					'<input type="checkbox" id="', id.useHttps, '" ', getInlineStyle( css.options.input.checkbox ), ' />',
-					'<label for="', id.useHttps, '" ', getInlineStyle( css.options.label ), '>',
+					'<input type="checkbox" id="', id.useHttps, '" ', getInlineStyle( 'input_checkbox' ), ' />',
+					'<label for="', id.useHttps, '" ', getInlineStyle( 'label' ), '>',
 						strings.useHttpsLabel,
 					'</label>',
 
 					canSaveOptions() ? [
-						'<table cellpadding="0" cellspacing="0" border="0" ', getInlineStyle( css.options.table ), '>',
+						'<table cellpadding="0" cellspacing="0" border="0" ', getInlineStyle( 'table' ), '>',
 							'<tr>',
-								'<th colspan="2" ', getInlineStyle( css.options.th ), '>',
+								'<th colspan="2" ', getInlineStyle( 'th' ), '>',
 									strings.cacheLinkOptions,
 								'</th>',
 							'</tr>',
 							'<tr>',
-								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<label for="', id.cacheLinkText, '" ', getInlineStyle( css.options.label ), '>',
+								'<td ', getInlineStyle( 'td' ) + '>',
+									'<label for="', id.cacheLinkText, '" ', getInlineStyle( 'label' ), '>',
 										strings.cacheLinkTextLabel,
 									'</label>',
 								'</td>',
-								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<input type="text" id="', id.cacheLinkText, '" value="', options.cacheLinkText.replace( /"/g, '&quot;' ), '" ', getInlineStyle( css.options.input.text ) + ' />',
+								'<td ', getInlineStyle( 'td' ) + '>',
+									'<input type="text" id="', id.cacheLinkText, '" value="', options.cacheLinkText.replace( /"/g, '&quot;' ), '" ', getInlineStyle( 'input_text' ) + ' />',
 								'</td>',
 							'</tr>',
 							'<tr>',
-								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<label for="', id.cacheLinkBackgroundColor, '" ', getInlineStyle( css.options.label ) + '>',
+								'<td ', getInlineStyle( 'td' ) + '>',
+									'<label for="', id.cacheLinkBackgroundColor, '" ', getInlineStyle( 'label' ) + '>',
 										strings.cacheLinkBackgroundColorLabel,
 									'</label>',
 								'</td>',
-								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<input type="text" id="', id.cacheLinkBackgroundColor, '" value="', options.cacheLinkBackgroundColor.replace( /"/g, '&quot;' ), '" ', getInlineStyle( css.options.input.text ) + ' />',
+								'<td ', getInlineStyle( 'td' ) + '>',
+									'<input type="text" id="', id.cacheLinkBackgroundColor, '" value="', options.cacheLinkBackgroundColor.replace( /"/g, '&quot;' ), '" ', getInlineStyle( 'input_text' ) + ' />',
 								'</td>',
 							'</tr>',
 							'<tr>',
-								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<label for="', id.cacheLinkTextColor, '" ', getInlineStyle( css.options.label ) + '>',
+								'<td ', getInlineStyle( 'td' ) + '>',
+									'<label for="', id.cacheLinkTextColor, '" ', getInlineStyle( 'label' ) + '>',
 										strings.cacheLinkTextColorLabel,
 									'</label>',
 								'</td>',
-								'<td ', getInlineStyle( css.options.td ) + '>',
-									'<input type="text" id="', id.cacheLinkTextColor, '" value="', options.cacheLinkTextColor.replace( /"/g, '&quot;' ), '" ', getInlineStyle( css.options.input.text ) + ' />',
+								'<td ', getInlineStyle( 'td' ) + '>',
+									'<input type="text" id="', id.cacheLinkTextColor, '" value="', options.cacheLinkTextColor.replace( /"/g, '&quot;' ), '" ', getInlineStyle( 'input_text' ) + ' />',
 								'</td>',
 							'</tr>',
 						'</table>',
 						strings.textOptionInstructions,
 						usingLocalStorage ? [
 							'<br>',
-							'<a href="" id="', id.syncLink, '" ', getInlineStyle( css.link ), '>',
+							'<a href="" id="', id.syncLink, '" ', getInlineStyle( 'a' ), '>',
 								strings.syncLinkText.replace( /%s/g, isHttp ? 'HTTPS' : 'HTTP' ),
 							'</a>',
 							'<span id="', id.syncing, '" style="display:none;">',
@@ -1185,7 +1191,7 @@
 
 		$( '#' + id.message )[ 0 ].innerHTML = redirect ?
 			strings.redirectLinkExplanation :
-			strings.cacheLinkExplanation.replace( /%s/g, '<a href="" id="' + id.exampleCacheLink + '" class="' + id.cacheLink + '" ' + getInlineStyle( css.cacheLink ) + '>' + options.cacheLinkText + '</a>' );
+			strings.cacheLinkExplanation.replace( /%s/g, '<a href="" id="' + id.exampleCacheLink + '" class="' + id.cacheLink + '" ' + getInlineStyle( 'a', css.cacheLink ) + '>' + options.cacheLinkText + '</a>' );
 	}
 
 	function useHttpsClick() {
