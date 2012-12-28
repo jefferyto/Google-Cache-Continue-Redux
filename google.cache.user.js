@@ -186,6 +186,15 @@
 		// checking text
 		checking: 'Checking for updates&hellip;',
 
+		// update available
+		updateAvailable: 'A newer version is available!',
+
+		// no update available
+		noUpdateAvailable: 'Your script is up to date',
+
+		// error occurred while checking
+		checkError: 'An error occurred while checking for updates',
+
 		// install newer version link text
 		update: 'Install latest version',
 
@@ -404,13 +413,10 @@
 		CACHE_TERM = findCacheTerm( SEARCH_QUERY ),
 
 		// element ids
-		ID = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks useHttps cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor syncLink syncing syncDone syncIframe aboutLink about closeLink checkLink checking updateLink'.split( ' ' ) ),
+		ID = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks useHttps cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor syncLink syncing syncDone syncIframe aboutLink about closeLink checkLink checkStatus updateLink'.split( ' ' ) ),
 
 		// script version
 		VERSION = '0.6',
-
-		// true if we're in currently checking
-		checking = false,
 
 		// true of we're using localStorage to save options
 		usingLocalStorage = false,
@@ -795,9 +801,6 @@
 					STRINGS.about,
 				'</a>',
 				space,
-				'<span id="', ID.checking, '">',
-					STRINGS.checking,
-				'</span>',
 				'<a href="', STRINGS.homepageUrl, '" id="', ID.updateLink, '" ', getInlineStyle( 'a' ), ' target="_blank">',
 					STRINGS.update,
 				'</a>',
@@ -817,6 +820,7 @@
 						'<a href="" id="', ID.checkLink, '" ', getInlineStyle( 'a' ), '>',
 							STRINGS.check,
 						'</a>',
+						'<span id="', ID.checkStatus, '"></span>',
 					'</p>',
 					'<p ', getInlineStyle( 'p' ), '>',
 						STRINGS.aboutText,
@@ -930,9 +934,17 @@
 		aboutLinkClick.call( link );
 
 		// check link
-		$( '#' + ID.checkLink )[ 0 ].addEventListener( 'click', checkLinkClick, false );
+		link = $( '#' + ID.checkLink )[ 0 ];
+		if ( options.canCheckForUpdate ) {
+			link.addEventListener( 'click', checkLinkClick, false );
+		} else {
+			link.style.display = 'none';
+		}
 
-		reflectUpdateStatus( options );
+		// check status
+		$( '#' + ID.checkStatus )[ 0 ].style.display = 'none';
+
+		updateUpdateLink( options );
 
 		window.addEventListener( 'unload', function() {
 			window.removeEventListener( 'unload', arguments.callee, false );
@@ -969,13 +981,7 @@
 		options.lastUpdateCheck = now() + '';
 		saveOptions( options );
 
-		checking = true;
 		showChecking();
-
-		function after() {
-			checking = false;
-			reflectUpdateStatus( options );
-		}
 
 		try {
 			GM_xmlhttpRequest( {
@@ -991,27 +997,42 @@
 						saveOptions( options );
 					}
 
-					after();
+					showCheckResult( options, true );
 				},
 
-				onerror: after
+				onerror: function () { showCheckResult( options, false ); }
 			} );
 
 		} catch ( e ) {
-			after();
+			showCheckResult( options, false );
 		}
 	}
 
 	function showChecking() {
-		$( '#' + ID.checking )[ 0 ].style.display = 'inline';
-		$( '#' + ID.updateLink )[ 0 ].style.display = 'none';
+		var status = $( '#' + ID.checkStatus )[ 0 ];
+		status.innerHTML = STRINGS.checking;
+		status.style.display = 'inline';
+
 		$( '#' + ID.checkLink )[ 0 ].style.display = 'none';
+		$( '#' + ID.updateLink )[ 0 ].style.display = 'none';
 	}
 
-	function reflectUpdateStatus( options ) {
-		$( '#' + ID.checking )[ 0 ].style.display = 'none';
+	function showCheckResult( options, success ) {
+		var msg;
+
+		if ( success ) {
+			msg = options.latestVersion > VERSION ? STRINGS.updateAvailable : STRINGS.noUpdateAvailable;
+		} else {
+			msg = STRINGS.checkError;
+		}
+
+		$( '#' + ID.checkStatus )[ 0 ].innerHTML = msg;
+
+		updateUpdateLink( options );
+	}
+
+	function updateUpdateLink( options ) {
 		$( '#' + ID.updateLink )[ 0 ].style.display = options.latestVersion > VERSION ? 'inline' : 'none';
-		$( '#' + ID.checkLink )[ 0 ].style.display = options.canCheckForUpdate ? 'inline' : 'none';
 	}
 
 
@@ -1271,9 +1292,7 @@
 	function checkLinkClick( e ) {
 		e.preventDefault();
 
-		if ( options.canCheckForUpdate && !checking ) {
-			checkForUpdate( options );
-		}
+		checkForUpdate( options );
 	}
 
 
