@@ -109,10 +109,10 @@
 
 		// explanation text for cache links
 		// %s will be replaced by a sample cache link
-		cacheLinkExplanation: 'Use %s links to continue using the Google cache.',
+		cacheLinkExplanation: 'Use %s links to continue using Google\'s cache.',
 
 		// explanation text for redirected page links
-		redirectLinkExplanation: 'All HTTP/HTTPS links will be redirected to the Google cache.',
+		redirectLinkExplanation: 'All HTTP/HTTPS links will be redirected to Google\'s cache.',
 
 		// "Show options" link text
 		showOptions: 'Show options',
@@ -121,7 +121,7 @@
 		hideOptions: 'Hide options',
 
 		// redirect page links option label
-		redirectPageLinksLabel: 'Redirect links to the Google cache',
+		redirectPageLinksLabel: 'Redirect links to Google\'s cache',
 
 		// use https option label
 		useHttpsLabel: 'Always use HTTPS',
