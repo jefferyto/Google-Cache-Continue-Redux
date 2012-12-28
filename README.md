@@ -6,6 +6,10 @@ See [userscripts.org](http://userscripts.org/scripts/show/30878) for more detail
 
 ## Redux changelog: ##
 
+### v0.6 () ###
+
+- 
+
 ### v0.5 (2011-05-25) ###
 
 - Works with cache pages under HTTPS / SSL

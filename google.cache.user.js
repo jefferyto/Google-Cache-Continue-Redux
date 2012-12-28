@@ -1,8 +1,8 @@
 // Google Cache Continue Redux
 // Based on Google Cache Continue by Jonathon Ramsey
-// v0.5
+// v0.6
 
-// Copyright (C) 2005-2011 by
+// Copyright (C) 2005-2012 by
 //   Jonathon Ramsey (jonathon.ramsey@gmail.com)
 //   Jeffery To (jeffery.to@gmail.com)
 
@@ -27,7 +27,7 @@
 
 // ==UserScript==
 // @name           Google Cache Continue Redux
-// @version        0.5
+// @version        0.6
 // @namespace      http://www.thingsthemselves.com/greasemonkey/
 // @description    Add links to Google cache results to allow continuing using the cache, keeping search terms highlighted
 // @include        http://*/search?*q=cache:*
@@ -39,6 +39,9 @@
 // ==/UserScript==
 
 // Redux changelog:
+
+// v0.6 ()
+// - 
 
 // v0.5 (2011-05-25)
 // - Works with cache pages under HTTPS / SSL
@@ -162,7 +165,7 @@
 		aboutTitle: 'Google Cache Continue Redux',
 
 		// about text
-		aboutText: 'Based on Google Cache Continue by Jonathon Ramsey<br>Copyright 2005-2011 by Jonathon Ramsey and Jeffery To',
+		aboutText: 'Based on Google Cache Continue by Jonathon Ramsey<br>Copyright 2005-2012 by Jonathon Ramsey and Jeffery To',
 
 		// about version text
 		// %s will be replaced by the version number
@@ -404,7 +407,7 @@
 		ID = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks useHttps cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor syncLink syncing syncDone syncIframe aboutLink about closeLink checkLink checking updateLink'.split( ' ' ) ),
 
 		// script version
-		VERSION = '0.5',
+		VERSION = '0.6',
 
 		// true if we're in currently checking
 		checking = false,
