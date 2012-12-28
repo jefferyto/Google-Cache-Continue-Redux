@@ -421,6 +421,9 @@
 		// true if we're under http (false for https)
 		IS_HTTP = window.location.protocol === 'http:',
 
+		// how many days inbetween update checks
+		UPDATE_CHECK_INTERVAL = 60,
+
 		// script options
 		options,
 
@@ -435,13 +438,19 @@
 	// these aren't actual options but things we need to remember
 	$.extend( defaultOptions, {
 		lastUpdateCheck: '0', // GM_setValue can only store 32-bit integers, so we need to save this as a string
-		updateAvailable: false
+		latestVersion: VERSION
 	} );
 
 	// restore, then save, options
 	// restoreOptions() will set usingLocalStorage as a side effect
 	// should find a better way...
 	options = restoreOptions();
+	if ( 'updateAvailable' in options ) {
+		options.updateAvailable = false; // not used anymore
+	}
+	if ( options.latestVersion < VERSION ) {
+		options.latestVersion = VERSION;
+	}
 	saveOptions( options );
 
 	if ( isCachePage( SEARCH_QUERY ) ) {
@@ -954,8 +963,7 @@
 	 * check for update
 	 */
 
-	// check every 60 days
-	function shouldCheckForUpdate( options ) { return now() - parseInt( options.lastUpdateCheck, 10 ) >= 60 * 24 * 60 * 60 * 1000; }
+	function shouldCheckForUpdate( options ) { return now() - parseInt( options.lastUpdateCheck, 10 ) >= UPDATE_CHECK_INTERVAL * 86400000; }
 
 	function checkForUpdate( options ) {
 		options.lastUpdateCheck = now() + '';
@@ -975,10 +983,11 @@
 				url: STRINGS.metaUrl + '?_=' + now(),
 
 				onload: function( data ) {
-					var a = /\/\/[ \t]*@version[ \t]+([^\s]+)/.exec( data.responseText || '' );
+					var a = /\/\/[ \t]*@version[ \t]+([^\s]+)/.exec( data.responseText || '' ),
+						ver = ( a && a[ 1 ] ) || VERSION;
 
-					if ( data.status === 200 ) {
-						options.updateAvailable = !!( a && a[ 1 ] > VERSION );
+					if ( data.status === 200 && ver >= VERSION ) {
+						options.latestVersion = ver;
 						saveOptions( options );
 					}
 
@@ -1001,7 +1010,7 @@
 
 	function reflectUpdateStatus( options ) {
 		$( '#' + ID.checking )[ 0 ].style.display = 'none';
-		$( '#' + ID.updateLink )[ 0 ].style.display = options.updateAvailable ? 'inline' : 'none';
+		$( '#' + ID.updateLink )[ 0 ].style.display = options.latestVersion > VERSION ? 'inline' : 'none';
 		$( '#' + ID.checkLink )[ 0 ].style.display = options.canCheckForUpdate ? 'inline' : 'none';
 	}
 
