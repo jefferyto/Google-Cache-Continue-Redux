@@ -459,7 +459,7 @@
 	}
 	saveOptions( options );
 
-	if ( isCachePage( SEARCH_QUERY ) ) {
+	if ( isCachePage() ) {
 		if ( options.useHttps && IS_HTTP ) {
 			window.setTimeout( function() { window.location.replace( window.location.href.replace( /^http:/i, 'https:' ) ); }, 0 );
 
@@ -626,17 +626,18 @@
 	}
 
 	// returns true if the current page is a google cache page
-	function isCachePage( query ) {
-		var str = document.title,
-			prefix = decodeURIComponent( query.replace( /\+/g, ' ' ) ) + ' - ',
-			result = true;
+	function isCachePage() {
+		var title = document.title,
+			img = $( 'img' ),
+			b = $( 'b' ),
+			ins = $( 'ins' ),
+			isErrorPage = // not sure how strict this should be
+				title === 'Error 404 (Not Found)!!1' &&
+				img.length === 1 && img[0].src.indexOf( '//www.google.com/images/errors/logo_sm.gif' ) > -1 &&
+				b.length === 1 && b[0].innerHTML === '404.' &&
+				ins.length === 2 && ins[0].innerHTML === 'That’s an error.' && ins[1].innerHTML === 'That’s all we know.';
 
-		if ( str.indexOf( prefix ) === 0 ) {
-			str = str.replace( prefix, '' );
-			result = str.indexOf( 'Google' ) === -1 || str.indexOf( ' - ' ) > -1;
-		}
-
-		return result;
+		return !isErrorPage;
 	}
 
 	// finds text-only / full version link, gathers link details, inserts cache links
