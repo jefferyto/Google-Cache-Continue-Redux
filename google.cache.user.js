@@ -212,11 +212,6 @@
 			'text-decoration': 'none'
 		},
 
-		uncached: {
-			'border': '1px solid #3366cc',
-			'padding': '1ex 0.5ex'
-		},
-
 		explanation: {
 			'border': '1px solid #999',
 			'margin': '1em 0',
@@ -399,6 +394,8 @@
 	};
 
 	$.insertAfter = function( newChild, refChild ) { refChild.parentNode.insertBefore( newChild, refChild.nextSibling ); };
+
+	$.append = function( parent, child ) { parent.appendChild( child ); };
 
 
 
@@ -775,16 +772,12 @@
 		$.each( list, function() { this.cacheLink.innerHTML = text; } );
 	}
 
-	// adds a link for the original URL to the Google search results page
-	// safer to add after the list of suggestions
-	// should be safe to not add a lot of default styles here
+	// adds a link for the original URL to the Google 404 page
+	// should be safe to not add styles here
 	function addOriginalLink( url ) {
-		var ul = $( 'ul' )[ 0 ],
-			msg = STRINGS.uncached.replace( /%s/g, '<a href="' + ( url.indexOf( '://' ) === -1 ? 'http://' : '' ) + url + '">' + url + '</a>' );
+		var msg = STRINGS.uncached.replace( /%s/g, '<a href="' + ( url.indexOf( '://' ) === -1 ? 'http://' : '' ) + url + '">' + url + '</a>' );
 
-		if ( ul ) {
-			$.insertAfter( $( '<p ' + getInlineStyle( false, CSS.uncached ) + '>' + msg + '</p>' ), ul );
-		}
+		$.append( body, $( '<p>' + msg + '</p>' ) );
 	}
 
 	// adds our explanation text and option panel to the cache page header
