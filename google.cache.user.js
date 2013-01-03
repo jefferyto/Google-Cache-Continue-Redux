@@ -2,7 +2,7 @@
 // Based on Google Cache Continue by Jonathon Ramsey
 // v0.6
 
-// Copyright (C) 2005-2012 by
+// Copyright (C) 2005-2013 by
 //   Jonathon Ramsey (jonathon.ramsey@gmail.com)
 //   Jeffery To (jeffery.to@gmail.com)
 
@@ -172,7 +172,7 @@
 		aboutTitle: 'Google Cache Continue Redux',
 
 		// about text
-		aboutText: 'Based on Google Cache Continue by Jonathon Ramsey<br>Copyright 2005-2012 by Jonathon Ramsey and Jeffery To',
+		aboutText: 'Based on Google Cache Continue by Jonathon Ramsey<br>Copyright 2005-2013 by Jonathon Ramsey and Jeffery To',
 
 		// about version text
 		// %s will be replaced by the version number
