@@ -8,6 +8,7 @@ See [userscripts.org](http://userscripts.org/scripts/show/30878) for more detail
 
 ### v0.6 () ###
 
+- Fixed option syncing in Chrome
 - Fixed update system
 
 ### v0.5 (2011-05-25) ###

@@ -36,11 +36,14 @@
 // @include        https://*/search?*q=cache:*
 // @include        https://*/search?*q=cache%3A*
 // @include        https://*/search?*q=cache%3a*
+// @include        http://webcache.googleusercontent.com/cache-continue-redux-option-sync
+// @include        https://webcache.googleusercontent.com/cache-continue-redux-option-sync
 // ==/UserScript==
 
 // Redux changelog:
 
 // v0.6 ()
+// - Fixed option syncing in Chrome
 // - Fixed update system
 
 // v0.5 (2011-05-25)
@@ -154,6 +157,10 @@
 		// if the cache page host matches this, then we can save options in Chrome
 		// http and https pages will have separate options though :-(
 		cacheHost: 'webcache.googleusercontent.com',
+
+		// path we will load to sync options in Chrome
+		// this all depends on Google not setting X-Frame-Options on their 404 page :-(
+		syncPath: '/cache-continue-redux-option-sync',
 
 		// prefix for values stored in localStorage
 		localStoragePrefix: 'greasemonkey.scriptvals.http://www.thingsthemselves.com/greasemonkey//Google Cache Continue Redux.',
@@ -433,8 +440,9 @@
 		// link details
 		links;
 
-	// we can't continue without this information
-	if ( !SEARCH_QUERY || !CACHE_TERM ) {
+	// continue only if we have a cache term or if we are the iframe of an option sync
+	if ( !( SEARCH_QUERY && CACHE_TERM ) &&
+			!( window.location.host === STRINGS.cacheHost && window.location.pathname === STRINGS.syncPath ) ) {
 		return;
 	}
 
@@ -1044,7 +1052,7 @@
 		if ( !syncing ) {
 			iframe = $( '<iframe id="' + ID.syncIframe + '" width="1" height="1" style="position:absolute;top:-99999px;visibility:hidden;"></iframe>' );
 			iframe.addEventListener( 'load', syncIframeLoad, false );
-			iframe.src = getTargetOrigin() + '/search?q=cache%3A';
+			iframe.src = getTargetOrigin() + STRINGS.syncPath;
 			body.appendChild( iframe );
 			syncing = true;
 
@@ -1310,7 +1318,7 @@
 
 	// runs the given script by appending a script element to the page
 	function execScript( code ) {
-		var script = $( '<script></script>' );
+		var script = document.createElement( 'script' ); // Chrome is picky about how this is created
 		script.appendChild( document.createTextNode( code ) );
 		body.appendChild( script );
 		window.setTimeout( function() { body.removeChild( script ); }, 500 ); // not sure we need to wait, but doesn't hurt?
