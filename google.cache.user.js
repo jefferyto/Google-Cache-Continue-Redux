@@ -43,6 +43,7 @@
 // Redux changelog:
 
 // v0.6 ()
+// - Fixed original (uncached) link not added to Google error page
 // - Fixed option syncing in Chrome
 // - Fixed update system
 

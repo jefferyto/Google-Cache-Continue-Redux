@@ -8,6 +8,7 @@ See [userscripts.org](http://userscripts.org/scripts/show/30878) for more detail
 
 ### v0.6 () ###
 
+- Fixed original (uncached) link not added to Google error page
 - Fixed option syncing in Chrome
 - Fixed update system
 
