@@ -77,7 +77,7 @@
 // v0.1 (2008-07-31)
 // - Initial version
 
-(function( window, document, head, body, undefined ) {
+(function( window, document, head, body, location, undefined ) {
 
 	/*
 	 * user editable parts, start!
@@ -160,7 +160,6 @@
 		cacheHost: 'webcache.googleusercontent.com',
 
 		// path we will load to sync options in Chrome
-		// this all depends on Google not setting X-Frame-Options on their 404 page :-(
 		syncPath: '/cache-continue-redux-option-sync',
 
 		// prefix for values stored in localStorage
@@ -430,7 +429,7 @@
 		syncing = false,
 
 		// true if we're under http (false for https)
-		IS_HTTP = window.location.protocol === 'http:',
+		IS_HTTP = location.protocol === 'http:',
 
 		// how many days inbetween update checks
 		UPDATE_CHECK_INTERVAL = 60,
@@ -443,7 +442,7 @@
 
 	// continue only if we have a cache term or if we are the iframe of an option sync
 	if ( !( SEARCH_QUERY && CACHE_TERM ) &&
-			!( window.location.host === STRINGS.cacheHost && window.location.pathname === STRINGS.syncPath ) ) {
+			!( location.host === STRINGS.cacheHost && location.pathname === STRINGS.syncPath ) ) {
 		return;
 	}
 
@@ -467,7 +466,7 @@
 
 	if ( isCachePage() ) {
 		if ( options.useHttps && IS_HTTP ) {
-			window.setTimeout( function() { window.location.replace( window.location.href.replace( /^http:/i, 'https:' ) ); }, 0 );
+			window.setTimeout( function() { location.replace( location.href.replace( /^http:/i, 'https:' ) ); }, 0 );
 
 		} else {
 			links = scanLinks( CACHE_TERM );
@@ -532,7 +531,7 @@
 
 			// use localStorage to save options if host matches cacheHost
 			// based on by http://userscripts.org/topics/41177#posts-197125
-			if ( !result && window.location.host === STRINGS.cacheHost && window.localStorage &&
+			if ( !result && location.host === STRINGS.cacheHost && window.localStorage &&
 					typeof window.localStorage.getItem === 'function' && typeof window.localStorage.setItem === 'function' ) {
 
 				GM_getValue = function( name, defaultValue ) {
@@ -607,7 +606,7 @@
 	function findSearchQuery() {
 		var query = '';
 
-		$.each( window.location.search.replace( /^\?/, '' ).split( '&' ), function( i, pair ) {
+		$.each( location.search.replace( /^\?/, '' ).split( '&' ), function( i, pair ) {
 			if ( pair.indexOf( 'q=' ) === 0 ) {
 				query = pair.substring( 2 );
 				return false;
@@ -655,7 +654,7 @@
 		                               XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
 		                               null ),
 			list = [],
-			tmplHref = window.location.href.replace(window.location.hash, ''),
+			tmplHref = location.href.replace( location.hash, '' ),
 			changeVersion, link, href, hash, cacheHref, cacheLink, i;
 
 		for ( i = 0; ( link = links.snapshotItem( i ) ); i++ ) {
@@ -1046,6 +1045,7 @@
 
 	// we need to use execScript() here because Chrome won't let an extension on the parent window access the window object of an iframe
 	// (or an extension on the iframe access the parent window object)
+	// this all depends on Google not setting X-Frame-Options on their 404 page :-(
 
 	function syncOptions() {
 		var iframe;
@@ -1188,7 +1188,7 @@
 		var me = arguments.callee;
 
 		if ( !me.cached ) {
-			me.cached = ( IS_HTTP ? 'https:' : 'http:' ) + '//' + window.location.host;
+			me.cached = ( IS_HTTP ? 'https:' : 'http:' ) + '//' + location.host;
 		}
 
 		return me.cached;
@@ -1325,5 +1325,5 @@
 		window.setTimeout( function() { body.removeChild( script ); }, 500 ); // not sure we need to wait, but doesn't hurt?
 	}
 
-})( window, document, document.getElementsByTagName( 'head' )[ 0 ], document.body );
+})( window, document, document.getElementsByTagName( 'head' )[ 0 ], document.body, window.location );
 
