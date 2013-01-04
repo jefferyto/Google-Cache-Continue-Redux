@@ -6,6 +6,13 @@ See [userscripts.org](http://userscripts.org/scripts/show/30878) for more detail
 
 ## Redux changelog: ##
 
+### v0.6 (2013-01-04) ###
+
+- Added a shortcut key to toggle between cache links and link redirection
+- Fixed original (uncached) link not added to Google error page
+- Fixed option syncing in Chrome
+- Fixed update system
+
 ### v0.5 (2011-05-25) ###
 
 - Works with cache pages under HTTPS / SSL
