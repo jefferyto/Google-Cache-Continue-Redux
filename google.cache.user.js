@@ -42,7 +42,8 @@
 
 // Redux changelog:
 
-// v0.6 ()
+// v0.6 (2013-01-04)
+// - Added a shortcut key to toggle between cache links and link redirection
 // - Fixed original (uncached) link not added to Google error page
 // - Fixed option syncing in Chrome
 // - Fixed update system
@@ -126,6 +127,9 @@
 
 		// redirect page links option label
 		redirectPageLinksLabel: 'Redirect links to Google\'s cache',
+
+		// redirect page links shortcut text
+		redirectPageLinksShortcut: 'Press <b>`</b> (grave accent / backquote key) to quickly toggle between cache links and link redirection',
 
 		// use https option label
 		useHttpsLabel: 'Always use HTTPS',
@@ -323,6 +327,11 @@
 				'margin': '1em 0'
 			}
 		}
+	},
+
+	// key codes for keyboard shortcuts
+	KEYS = {
+		toggleRedirectPageLinks: 192 // ` (grave accent / backquote / backtick)
 	};
 
 	/*
@@ -474,6 +483,8 @@
 			if ( links.changeVersion ) {
 				addExplanation( options, links.changeVersion.parentNode.parentNode );
 
+				document.addEventListener( 'keydown', shortcutKeydown, false );
+
 				if ( options.canCheckForUpdate && shouldCheckForUpdate( options ) ) {
 					checkForUpdate( options );
 				}
@@ -492,6 +503,7 @@
 	// cleanup
 	window.addEventListener( 'unload', function() {
 		window.removeEventListener( 'unload', arguments.callee, false );
+		document.removeEventListener( 'keydown', shortcutKeydown, false );
 		window.removeEventListener( 'message', receivedMessage, false );
 		SEARCH_QUERY = CACHE_TERM = options = id = links = null;
 	}, false );
@@ -840,6 +852,9 @@
 					'<label for="', ID.useHttps, '" ', getInlineStyle( 'label' ), '>',
 						STRINGS.useHttpsLabel,
 					'</label>',
+					'<div ', getInlineStyle( 'div', CSS.panel ), '>',
+						STRINGS.redirectPageLinksShortcut,
+					'</div>',
 
 					canSaveOptions() ? [
 						'<table cellpadding="0" cellspacing="0" border="0" ', getInlineStyle( 'table' ), '>',
@@ -1296,6 +1311,28 @@
 		e.preventDefault();
 
 		checkForUpdate( options );
+	}
+
+	// handle keyboard shortcuts
+	function shortcutKeydown( e ) {
+		var active = document.activeElement,
+			nodeName = active.nodeName.toUpperCase(),
+			type = ( active.type || '' ).toLowerCase(),
+			input;
+
+		switch ( e.keyCode ) {
+		case KEYS.toggleRedirectPageLinks:
+			if ( !e.altKey && !e.ctrlKey && !e.shiftKey &&
+					( nodeName !== 'INPUT' || type === 'checkbox' || type === 'radio' ) &&
+					nodeName !== 'SELECT' && nodeName !== 'TEXTAREA' ) {
+
+				input = $( '#' + ID.redirectPageLinks )[ 0 ];
+				if ( input ) {
+					input.checked = !input.checked;
+					redirectPageLinksClick.call( input );
+				}
+			}
+		}
 	}
 
 
