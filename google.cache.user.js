@@ -1,6 +1,6 @@
 // Google Cache Continue Redux
 // Based on Google Cache Continue by Jonathon Ramsey
-// v0.6
+// v0.6.1
 
 // Copyright (C) 2005-2013 by
 //   Jonathon Ramsey (jonathon.ramsey@gmail.com)
@@ -27,7 +27,7 @@
 
 // ==UserScript==
 // @name           Google Cache Continue Redux
-// @version        0.6
+// @version        0.6.1
 // @namespace      http://www.thingsthemselves.com/greasemonkey/
 // @description    Add links to Google cache results to allow continuing using the cache, keeping search terms highlighted
 // @include        http://*/search?*q=cache:*
@@ -41,6 +41,9 @@
 // ==/UserScript==
 
 // Redux changelog:
+
+// v0.6.1 (2013-01-07)
+// - Fixed shortcut key for Opera (Mac)
 
 // v0.6 (2013-01-04)
 // - Added a shortcut key to toggle between cache links and link redirection
@@ -331,7 +334,7 @@
 
 	// key codes for keyboard shortcuts
 	KEYS = {
-		toggleRedirectPageLinks: 192 // ` (grave accent / backquote / backtick)
+		toggleRedirectPageLinks: 96 // keypress code for ` (grave accent / backquote / backtick)
 	};
 
 	/*
@@ -429,7 +432,7 @@
 		ID = generateIds( 'cacheLink hideCacheLinks cacheLinkColors cacheLinkHoverColors exampleCacheLink message optionsLink options redirectPageLinks useHttps cacheLinkText cacheLinkBackgroundColor cacheLinkTextColor syncLink syncing syncDone syncIframe aboutLink about closeLink checkLink checkStatus updateLink'.split( ' ' ) ),
 
 		// script version
-		VERSION = '0.6',
+		VERSION = '0.6.1',
 
 		// true of we're using localStorage to save options
 		usingLocalStorage = false,
@@ -483,7 +486,7 @@
 			if ( links.changeVersion ) {
 				addExplanation( options, links.changeVersion.parentNode.parentNode );
 
-				document.addEventListener( 'keydown', shortcutKeydown, false );
+				document.addEventListener( 'keypress', shortcutKeypress, false );
 
 				if ( options.canCheckForUpdate && shouldCheckForUpdate( options ) ) {
 					checkForUpdate( options );
@@ -503,7 +506,7 @@
 	// cleanup
 	window.addEventListener( 'unload', function() {
 		window.removeEventListener( 'unload', arguments.callee, false );
-		document.removeEventListener( 'keydown', shortcutKeydown, false );
+		document.removeEventListener( 'keypress', shortcutKeypress, false );
 		window.removeEventListener( 'message', receivedMessage, false );
 		SEARCH_QUERY = CACHE_TERM = options = id = links = null;
 	}, false );
@@ -1314,13 +1317,13 @@
 	}
 
 	// handle keyboard shortcuts
-	function shortcutKeydown( e ) {
+	function shortcutKeypress( e ) {
 		var active = document.activeElement,
 			nodeName = active.nodeName.toUpperCase(),
 			type = ( active.type || '' ).toLowerCase(),
 			input;
 
-		switch ( e.keyCode ) {
+		switch ( e.charCode || e.keyCode ) {
 		case KEYS.toggleRedirectPageLinks:
 			if ( !e.altKey && !e.ctrlKey && !e.shiftKey &&
 					( nodeName !== 'INPUT' || type === 'checkbox' || type === 'radio' ) &&
