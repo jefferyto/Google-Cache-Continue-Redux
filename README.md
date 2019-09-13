@@ -2,7 +2,11 @@
 
 Add links to Google cache results to allow continuing using the cache, keeping search terms highlighted 
 
-See [userscripts.org](http://userscripts.org/scripts/show/30878) for more details
+## UNMAINTAINED ##
+
+I have decided against actively supporting Google products or services. I suggest using (and supporting) the [Wayback Machine] instead of the Google cache.
+
+[Wayback Machine]: https://web.archive.org/
 
 ## Redux changelog: ##
 
